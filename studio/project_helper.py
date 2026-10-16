@@ -32,6 +32,8 @@ PROJECT_TYPES = ('Blank', 'Godot', 'Music/Audio', 'Animation', '3D')
 DOCS = ('GAME.md', 'PROGRESS.md', 'DECISIONS.md', 'AGENTS.md')
 WORKFLOW = ('Before significant implementation, read GAME.md, PROGRESS.md, DECISIONS.md and AGENTS.md '
             'in the project root. Keep PROGRESS.md and DECISIONS.md concise and accurate after meaningful changes. '
+            'Treat GAME.md, PROGRESS.md and DECISIONS.md as the shared handoff for ChatGPT, Codex, Godot, Blender and Krita. '
+            'Record agreed design changes before implementation and update progress after implementation. '
             'Work only in this project; never change Wolf, server services or unrelated projects. '
             'Do not commit unless explicitly requested. For Godot projects only, validate Godot changes with the existing '
             '~/.local/bin/studio-validate PROJECT_NAME when available, replacing PROJECT_NAME with the project name. '
