@@ -426,7 +426,7 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
     def initialize_tray(self):
         self.menu = Gtk.Menu()
         self.tray_project_items = []
-        for text, callback in [('Open OptiPlex Studio', self.restore), ('Open Studio Desktop', lambda: (self.restore(), self.open_studio_desktop())), ('New Codex conversation', lambda: (self.restore(), self.action('code'))), ('Resume conversation', lambda: (self.restore(), self.action('resume'))), ('Studio workspace', lambda: self.open_url('https://studio.monumentrisk.com')), ('Settings', lambda: (self.restore(), self.settings(None))), ('Quit', self.quit)]:
+        for text, callback in [('Open OptiPlex Studio', self.restore), ('Open Studio Desktop', lambda: (self.restore(), self.open_studio_desktop())), ('New Codex conversation', lambda: (self.restore(), self.action('code'))), ('Resume conversation', lambda: (self.restore(), self.session_browser())), ('Studio workspace', lambda: self.open_url('https://studio.monumentrisk.com')), ('Settings', lambda: (self.restore(), self.settings(None))), ('Quit', self.quit)]:
             item = Gtk.MenuItem(label=text)
             item.connect('activate', lambda _, cb=callback: cb())
             self.menu.append(item)
