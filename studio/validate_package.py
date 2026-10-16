@@ -19,7 +19,7 @@ def field(name):
 for name, expected in {'Package': 'optiplex-studio', 'Version': '0.3.0', 'Architecture': 'amd64'}.items():
     assert field(name) == expected, (name, field(name))
 dependencies = field('Depends')
-for name in ('libc6', 'python3', 'python3-gi', 'gir1.2-gtk-3.0', 'openssh-client', 'x-terminal-emulator', 'ca-certificates'):
+for name in ('libc6', 'python3', 'python3-gi', 'gir1.2-gtk-3.0', 'openssh-client', 'gvfs-backends', 'gvfs-fuse', 'x-terminal-emulator', 'ca-certificates'):
     assert name in dependencies, 'Missing dependency: ' + name
 with tarfile.open(fileobj=io.BytesIO(subprocess.check_output(['dpkg-deb', '--ctrl-tarfile', str(package)]))) as archive:
     assert {m.name.removeprefix('./') for m in archive if m.isfile()} == {'control'}, 'Unexpected maintainer scripts'
@@ -38,7 +38,7 @@ with tarfile.open(fileobj=io.BytesIO(subprocess.check_output(['dpkg-deb', '--fsy
     assert not any('optiplex-now' in p or p.endswith('.svg') for p in files), 'Wrong application/artwork'
 
 modules = ['app.py', 'core.py', 'project_client.py', 'project_helper.py', 'project_ui.py',
-           'desktop_helper.py', 'godot_focus.py', 'session_helper.py', 'session_ui.py', 'style.css']
+           'desktop_helper.py', 'godot_focus.py', 'file_browser.py', 'session_helper.py', 'session_ui.py', 'style.css']
 expected = {'usr/bin/optiplex-studio', 'usr/share/doc/optiplex-studio/README.md',
             'usr/share/applications/com.monumentrisk.OptiPlexStudio.desktop'}
 for module in modules:

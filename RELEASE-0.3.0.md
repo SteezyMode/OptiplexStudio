@@ -25,7 +25,7 @@ ChatGPT snapshot ZIPs share the selected project directory.
 ## Validation performed for this release
 
 - C launcher compiled using GCC with warnings treated as errors.
-- All 96 automated tests passed, covering networking/TLS, launcher construction,
+- All 106 automated tests passed, covering networking/TLS, launcher construction,
   cold-session sequencing and failure handling, transfers/conflicts/path safety,
   snapshots/exclusions, templates, session association and UUID/prompt quoting.
 - Native GTK tests passed on isolated Broadway displays with temporary project
@@ -67,3 +67,30 @@ Approved tray PNG: 549x549 RGBA, SHA256:
 
 Repository: https://github.com/SteezyMode/OptiplexStudio
 Release: https://github.com/SteezyMode/OptiplexStudio/releases/tag/v0.3.0
+
+## Same-version corrections
+
+- Project Files/Browse Assets now verify and mount SFTP, use a mounted local
+  path with file managers, or fall back to a native GTK remote browser with
+  local-copy support. GVfs backends and FUSE are required dependencies.
+- Godot/Blender/Krita discover the running desktop's Wayland socket rather than
+  passing the obsolete wayland-2 value. The existing server CLI is unchanged;
+  fixed client-side Flatpak launch arguments use the discovered environment.
+  Launch confirmation waits up to 30 seconds, with no automatic duplicate launch.
+- Application launch failures are shown in dialogs, not just the status footer.
+- Native tests now exercise modules extracted from the built Debian package,
+  click both file buttons, display their folders, download a fixture file,
+  and verify mapped AI controls and selected-project action/session routing.
+- A live read-only SFTP mount and GTK folder display passed over Tailscale for
+  this source directory. Read-only desktop probes found all three applications,
+  successful version commands and a ready display using wayland-1.
+
+The MacBook installation was not accessed or changed. Its installed-source
+comparison and final interactive testing remain for the user. Quit the existing
+Studio process, reinstall the corrected 0.3.0 package, and reopen it to avoid
+single-instance activation of an older process. No projects, Codex history,
+configuration, NOW, Wolf or other server services were changed.
+
+Only the existing v0.3.0 installer/checksum assets and release notes are updated;
+the original release tag is retained. The release workflow requires successful
+checks before `gh release upload v0.3.0 ... --clobber`.

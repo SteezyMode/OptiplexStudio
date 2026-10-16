@@ -149,18 +149,32 @@ class ProjectUI:
                           f'Checking filenames in {project}…')
 
     def browse_assets(self, _=None):
+        self.browse_remote_folder(True)
+
+    def browse_remote_folder(self, assets=False):
         context = self.selected_context()
         if not context:
             return
         config, project = context
-        def open_browser(result):
+        def opened(result):
+            from file_browser import RemoteFolder
+            uri = client.project_uri(config, project, assets=assets)
+            self.busy = True
+            self.create_button.set_sensitive(False)
+            self.selection_changed(None)
+            def finished(message, error):
+                self.busy = False
+                self.selection_changed(None)
+                self.status.set_text(error or message)
+                if error:
+                    self.notice('Cannot open project folder', error)
+            self.remote_folder = RemoteFolder(self.window, uri, finished, self.status.set_text)
             try:
-                Gio.AppInfo.launch_default_for_uri(client.asset_uri(config, project), None)
-            except GLib.Error as exc:
-                raise RuntimeError('Cannot open SFTP. Install a graphical file manager and gvfs-backends; reuse your trusted SSH keys. ' + str(exc)) from exc
-            self.status.set_text(f'Opened {project}/assets via SFTP with your existing SSH trust and keys.')
-        self.project_task(lambda progress: client.request(config, project, 'browse'), open_browser,
-                          f'Opening {project} asset directory…')
+                self.remote_folder.start()
+            except Exception as exc:
+                self.remote_folder.end(error=str(exc))
+        self.project_task(lambda progress: client.request(config, project, 'browse' if assets else 'browse_project'),
+                          opened, f'Checking {project} folder and SSH access…')
 
     def creative_tool(self, name, url):
         context = self.selected_context()
@@ -214,17 +228,7 @@ class ProjectUI:
         self.project_task(task, lambda result: self.status.set_text(result), f'Opening {application.title()} in Studio Desktop…')
 
     def browse_project(self, _=None):
-        context = self.selected_context()
-        if not context:
-            return
-        config, project = context
-        def opened(result):
-            from urllib.parse import quote
-            uri = f'sftp://{config["user"]}@{core.tailscale_ip(config)}' + quote(client.remote_project_path(config, project), safe='/')
-            Gio.AppInfo.launch_default_for_uri(uri, None)
-            self.status.set_text('Opened project files for ' + project)
-        self.project_task(lambda progress: client.request(config, project, 'browse_project'), opened,
-                          'Opening project files over Tailscale SFTP…')
+        self.browse_remote_folder(False)
 
     def documents(self, _=None):
         context = self.selected_context()

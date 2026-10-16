@@ -93,10 +93,13 @@ def remote_project_path(config, project):
     return f'{home}/StudioProjects/Godot/{project}'
 
 
-def asset_uri(config, project):
-    path = remote_project_path(config, project) + '/assets'
+def project_uri(config, project, assets=False):
+    path = remote_project_path(config, project) + ('/assets' if assets else '')
     return f'sftp://{config["user"]}@{core.tailscale_ip(config)}' + quote(path, safe='/')
 
+
+def asset_uri(config, project):
+    return project_uri(config, project, assets=True)
 
 def plan_import(config, project, files, category):
     if category not in policy.CATEGORIES or not files or len(files) > 100:

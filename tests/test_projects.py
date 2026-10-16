@@ -250,7 +250,7 @@ class Projects(unittest.TestCase):
             if args[1] == 'ps': return 'WolfStudioDesktop_123\n'
             if args[1] == 'top': return 'COMMAND\n/app/bin/godot --editor --path /projects/Godot/game\n'
             raise AssertionError('Unexpected mutation or duplicate launch')
-        with patch('desktop_helper.Path.home', return_value=home), patch('desktop_helper.run', side_effect=fake_run), patch('desktop_helper.focus_godot', return_value=True) as focus:
+        with patch('desktop_helper.Path.home', return_value=home), patch('desktop_helper.desktop_environment', return_value={'DISPLAY': ':0', 'XDG_RUNTIME_DIR': '/run/user/wolf', 'WAYLAND_DISPLAY': 'wayland-1'}), patch('desktop_helper.run', side_effect=fake_run), patch('desktop_helper.focus_godot', return_value=True) as focus:
             result = desktop_helper.handle({'version': 1, 'operation': 'desktop', 'project': 'game', 'application': 'godot'})
             focus.assert_called_once_with('WolfStudioDesktop_123', 'game')
         self.assertTrue(result['reused'])
@@ -271,7 +271,7 @@ class Projects(unittest.TestCase):
                 if args[1] == 'top':
                     return ('COMMAND\n/app/bin/' + app + '\n') if any('exec' in call and '-d' in call for call in calls) else 'COMMAND\n'
                 return ''
-            with patch('desktop_helper.Path.home', return_value=home), patch('desktop_helper.run', side_effect=fake_run):
+            with patch('desktop_helper.Path.home', return_value=home), patch('desktop_helper.desktop_environment', return_value={'DISPLAY': ':0', 'XDG_RUNTIME_DIR': '/run/user/wolf', 'WAYLAND_DISPLAY': 'wayland-1'}), patch('desktop_helper.run', side_effect=fake_run), patch('desktop_helper.time.sleep'):
                 result = desktop_helper.handle({'version': 1, 'operation': 'desktop', 'project': 'game', 'application': app})
             self.assertFalse(result['reused'])
             launch = next(call for call in calls if 'exec' in call and '-d' in call)

@@ -126,9 +126,9 @@ class DirectDesktop(unittest.TestCase):
                 calls.append(args)
                 return 'WolfStudioDesktop_123\n' if args[1] == 'ps' else 'COMMAND\n' if args[1] == 'top' else 'Opened Godot'
             request = {'version': 1, 'operation': 'desktop', 'project': 'game', 'application': 'godot'}
-            with patch('desktop_helper.Path.home', return_value=home), patch('desktop_helper.run', side_effect=run), patch('desktop_helper.time.sleep'):
-                with self.assertRaisesRegex(RuntimeError, 'no editor process'):
+            with patch('desktop_helper.Path.home', return_value=home), patch('desktop_helper.desktop_environment', return_value={'DISPLAY': ':0', 'XDG_RUNTIME_DIR': '/run/user/wolf', 'WAYLAND_DISPLAY': 'wayland-1'}), patch('desktop_helper.run', side_effect=run), patch('desktop_helper.time.sleep'):
+                with self.assertRaisesRegex(RuntimeError, 'no application process'):
                     desktop_helper.handle(request)
                 with self.assertRaisesRegex(RuntimeError, 'already pending'):
                     desktop_helper.handle(request)
-            self.assertEqual(sum(args[0].endswith('/studio') for args in calls), 1)
+            self.assertEqual(sum('exec' in args and '-d' in args for args in calls), 1)

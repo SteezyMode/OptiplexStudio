@@ -35,7 +35,7 @@ if pkg.exists():
 for folder in ['DEBIAN', 'usr/bin', 'usr/lib/optiplex-studio', 'usr/share/applications', 'usr/share/pixmaps', 'usr/share/doc/optiplex-studio']:
     (pkg / folder).mkdir(parents=True, exist_ok=True)
 shutil.copy2(root / 'build/optiplex-studio', pkg / 'usr/bin/optiplex-studio')
-for filename in ['app.py', 'core.py', 'project_helper.py', 'project_client.py', 'project_ui.py', 'desktop_helper.py', 'godot_focus.py', 'session_helper.py', 'session_ui.py', 'style.css']:
+for filename in ['app.py', 'core.py', 'project_helper.py', 'project_client.py', 'project_ui.py', 'desktop_helper.py', 'godot_focus.py', 'file_browser.py', 'session_helper.py', 'session_ui.py', 'style.css']:
     shutil.copy2(root / 'studio' / filename, pkg / 'usr/lib/optiplex-studio' / filename)
 for path, destination in icons:
     (pkg / destination).mkdir(parents=True, exist_ok=True)
@@ -63,8 +63,8 @@ Section: devel
 Priority: optional
 Architecture: {arch}
 Maintainer: OptiPlex Studio <local@localhost>
-Depends: libc6 (>= 2.34), python3, python3-gi, gir1.2-gtk-3.0, librsvg2-common, openssh-client, x-terminal-emulator, ca-certificates
-Recommends: gvfs-backends, gvfs-fuse, gir1.2-ayatanaappindicator3-0.1, wmctrl, chromium | google-chrome-stable | brave-browser
+Depends: libc6 (>= 2.34), python3, python3-gi, gir1.2-gtk-3.0, librsvg2-common, openssh-client, gvfs-backends, gvfs-fuse, x-terminal-emulator, ca-certificates
+Recommends: gir1.2-ayatanaappindicator3-0.1, wmctrl, chromium | google-chrome-stable | brave-browser
 Description: Native GTK3 OptiPlex Studio desktop
  Independent creative project and Codex workspace using Tailscale SSH.
 ''')

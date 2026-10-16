@@ -67,7 +67,7 @@ class ColdStart(unittest.TestCase):
 
     def test_container_is_not_ready_until_display_probe_succeeds(self):
         for code in (1, 0):
-            with self.subTest(code=code), patch('desktop_helper.run', return_value='WolfStudioDesktop_123\n'), patch('subprocess.run', return_value=subprocess.CompletedProcess([], code, 'Desktop probe result', '')) as execute:
+            with self.subTest(code=code), patch('desktop_helper.desktop_environment', return_value={'DISPLAY': ':0', 'XDG_RUNTIME_DIR': '/run/user/wolf', 'WAYLAND_DISPLAY': 'wayland-1'}), patch('desktop_helper.run', return_value='WolfStudioDesktop_123\n'), patch('subprocess.run', return_value=subprocess.CompletedProcess([], code, 'Desktop probe result', '')) as execute:
                 status = desktop_helper.desktop_status('game')
                 self.assertEqual(status['ready'], code == 0)
                 args = execute.call_args.args[0]

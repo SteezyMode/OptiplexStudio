@@ -302,6 +302,8 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
             self.create_button.set_sensitive(True)
             self.selection_changed(None)
             self.status.set_text(message)
+            if error:
+                self.notice('Studio action failed', error)
             if action == 'new' and not error:
                 self.last_project = name
                 try:

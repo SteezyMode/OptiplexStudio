@@ -162,6 +162,7 @@ class Moonlight(unittest.TestCase):
             busy = False
             status, create_button = Widget(), Widget()
             def selection_changed(self, _): pass
+            notice = MagicMock()
             def worker(self, task, done):
                 try: result = task()
                 except Exception as exc: done(None, str(exc))

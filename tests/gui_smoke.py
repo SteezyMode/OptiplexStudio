@@ -1,7 +1,8 @@
 """Run under GDK_BACKEND=broadway and a private session D-Bus."""
 import sys
+import os
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'studio'))
+sys.path.insert(0, os.environ.get('STUDIO_TEST_LIB', str(Path(__file__).resolve().parents[1] / 'studio')))
 from gi.repository import GLib
 import app
 app.core.projects = lambda config: [{'name': 'smoke-project', 'branch': 'main', 'dirty': False, 'commit': 'fixture'}]

@@ -6,7 +6,7 @@ import sys
 import tempfile
 import time
 import zipfile
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'studio'))
+sys.path.insert(0, os.environ.get('STUDIO_TEST_LIB', str(Path(__file__).resolve().parents[1] / 'studio')))
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import GLib, Gtk, Gdk

@@ -51,11 +51,62 @@ def focus_godot(container, project):
         source = Path(__file__).with_name('godot_focus.py').read_text()
     try:
         run(['docker', 'exec', '-u', 'retro', '-e', 'DISPLAY=:0',
-             '-e', 'XDG_RUNTIME_DIR=/run/user/wolf', '-e', 'WAYLAND_DISPLAY=wayland-2',
+             '-e', 'XDG_RUNTIME_DIR=/run/user/wolf',
              container, 'python3', '-c', source, project], timeout=10)
         return True
     except (OSError, RuntimeError, subprocess.TimeoutExpired):
         return False
+
+
+ENVIRONMENT_SOURCE = r"""
+import json, os, re
+from pathlib import Path
+runtime = Path('/run/user/wolf')
+wayland = os.environ.get('WAYLAND_DISPLAY', '')
+if not re.fullmatch(r'wayland-[0-9]+', wayland) or not (runtime / wayland).is_socket():
+    candidates = sorted(p.name for p in runtime.glob('wayland-*') if re.fullmatch(r'wayland-[0-9]+', p.name) and p.is_socket())
+    wayland = candidates[0] if len(candidates) == 1 else ''
+display = os.environ.get('DISPLAY') or ':0'
+print(json.dumps({'DISPLAY': display, 'XDG_RUNTIME_DIR': str(runtime), 'WAYLAND_DISPLAY': wayland}))
+"""
+
+
+def desktop_environment(container):
+    values = json.loads(run(['docker', 'exec', '-u', 'retro', container, 'python3', '-c', ENVIRONMENT_SOURCE]))
+    if (not isinstance(values, dict) or values.get('XDG_RUNTIME_DIR') != '/run/user/wolf'
+            or not re.fullmatch(r':[0-9]+(?:\.[0-9]+)?', values.get('DISPLAY', ''))
+            or not re.fullmatch(r'(?:wayland-[0-9]+)?', values.get('WAYLAND_DISPLAY', ''))):
+        raise ValueError('Invalid desktop display environment.')
+    return {key: values[key] for key in ('DISPLAY', 'XDG_RUNTIME_DIR', 'WAYLAND_DISPLAY')}
+
+
+def environment_args(values):
+    return [arg for key, value in values.items() for arg in ('-e', key + '=' + value)]
+
+
+def launch_and_confirm(container, application, project):
+    values = desktop_environment(container)
+    run(['docker', 'exec', '-u', 'retro', container, 'flatpak', 'info', '--show-ref', APPS[application]])
+    command = ['docker', 'exec', '-d', '-u', 'retro'] + environment_args(values)
+    command += ['-w', '/home/retro' if project == '__desktop__' else '/projects/Godot/' + project,
+                container, 'flatpak', 'run', APPS[application]]
+    if application == 'godot':
+        command += ['--editor', '--path', '/projects/Godot/' + project]
+    run(command)
+    # First-run Flatpak initialization/import can take substantially longer than
+    # four seconds. Never issue a second launch while checking the first one.
+    stable_polls = 0
+    for _ in range(60):
+        if matching_process(run(['docker', 'top', container, '-eo', 'args']), application, project):
+            stable_polls += 1
+            if stable_polls >= 3:
+                return
+        else:
+            stable_polls = 0
+        time.sleep(.5)
+    raise RuntimeError(application.title() + ' launch was requested but no application process was confirmed within 30 seconds. '
+                       'The desktop connection alone is not a successful application launch. '
+                       'Check the desktop display/Flatpak runtime; no automatic relaunch was attempted.')
 
 
 READINESS_SOURCE = r"""
@@ -112,9 +163,8 @@ def desktop_status(project):
         return {'ready': False, 'message': 'Waiting for Moonlight to start the Wolf Studio Desktop session.'}
     if len(names) != 1:
         raise RuntimeError('Multiple Wolf Studio Desktop containers are running; cannot select a session safely.')
-    result = subprocess.run(['docker', 'exec', '-u', 'retro', '-e', 'DISPLAY=:0',
-                             '-e', 'XDG_RUNTIME_DIR=/run/user/wolf', '-e', 'WAYLAND_DISPLAY=wayland-2',
-                             names[0], 'python3', '-c', READINESS_SOURCE, project],
+    values = desktop_environment(names[0])
+    result = subprocess.run(['docker', 'exec', '-u', 'retro'] + environment_args(values) + [names[0], 'python3', '-c', READINESS_SOURCE, project],
                             capture_output=True, text=True, timeout=8)
     return {'ready': result.returncode == 0,
             'message': (result.stdout or result.stderr or 'Waiting for the desktop display.')[-2000:].strip()}
@@ -180,31 +230,15 @@ def handle(request):
                     os.unlink(pending, dir_fd=fd)
                 marker = os.open(pending, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=fd)
                 os.close(marker)
-                # Preserve the operator's working studio edit command unchanged.
-                try:
-                    run([str(Path.home() / '.local/bin/studio'), 'edit', project], timeout=60)
-                except Exception:
-                    # Retain the marker after ambiguous timeout; a nonzero remote
-                    # command may also have started a detached child already.
-                    raise
-                # Keep the lock briefly while the detached editor acquires its process.
-                for _ in range(8):
-                    if matching_process(run(['docker', 'top', container, '-eo', 'args']), application, project):
-                        os.unlink(pending, dir_fd=fd)
-                        focused = focus_godot(container, project)
-                        return {'message': 'Godot opened for ' + project + '.', 'reused': False, 'focused': focused}
-                    time.sleep(.5)
-                raise RuntimeError('Godot launch was requested but no editor process was confirmed. Check the running desktop; no automatic retry was made.')
-            run(['docker', 'exec', '-u', 'retro', container, 'flatpak', 'info', '--show-ref', APPS[application]])
-            command = ['docker', 'exec', '-d', '-u', 'retro', '-e', 'DISPLAY=:0',
-                       '-e', 'XDG_RUNTIME_DIR=/run/user/wolf', '-e', 'WAYLAND_DISPLAY=wayland-2',
-                       '-w', '/home/retro' if project == '__desktop__' else '/projects/Godot/' + project, container, 'flatpak', 'run', APPS[application]]
-            run(command)
-            for _ in range(8):
-                if matching_process(run(['docker', 'top', container, '-eo', 'args']), application, project):
-                    return {'message': application.title() + ' opened in the existing Studio Desktop for ' + project + '.', 'reused': False}
-                time.sleep(.5)
-            raise RuntimeError(application.title() + ' launch was requested but its process was not confirmed. Check the existing desktop and installed Flatpak; no automatic retry was made.')
+                # The existing CLI is left unchanged. Its fixed wayland-2 flag
+                # does not match every running profile, so the GUI uses the same
+                # fixed Flatpak editor arguments with the discovered environment.
+                launch_and_confirm(container, application, project)
+                os.unlink(pending, dir_fd=fd)
+                focused = focus_godot(container, project)
+                return {'message': 'Godot opened for ' + project + '.', 'reused': False, 'focused': focused}
+            launch_and_confirm(container, application, project)
+            return {'message': application.title() + ' opened in Studio Desktop.', 'reused': False}
         finally:
             os.close(lock)
     finally:

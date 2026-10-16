@@ -133,9 +133,12 @@ not changed. Writes use temporary files and atomic replacement; new files use
 an atomic no-clobber create. A failure reports how many files completed; the
 batch is not transactional. No silent overwrite or automatic Git commit occurs.
 
-Browse Assets opens the selected remote `assets/` folder in the user's graphical
-SFTP file manager. Install `gvfs-backends` and a compatible file manager if no
-SFTP handler is available. It uses the configured numeric Tailscale address and
+Project Files and Browse Assets check and mount the selected remote directory
+through GVfs before opening it. The verified local GVfs/FUSE path is passed to
+the directory file manager, avoiding unsupported SFTP URI handlers. When that
+is unavailable, a native GTK browser opens the remote folder directly and can
+save selected files locally. `gvfs-backends` and `gvfs-fuse` are required package
+dependencies. Connection, authentication and launch failures produce a dialog. It uses the configured numeric Tailscale address and
 existing SSH trust/keys. File-manager authentication or trust prompts may still
 appear; no typed SSH commands are required.
 
@@ -219,9 +222,13 @@ The bundled `desktop_helper.py` supports only Godot, Krita and Blender. It uses
 existing server-user permissions and exactly one already-running
 `WolfStudioDesktop_*` container. It never starts/stops/restarts containers,
 creates profiles, installs software, grants Docker permissions or accepts an
-arbitrary executable. Godot still uses the unchanged server-side
-`~/.local/bin/studio edit PROJECT` after checking for an existing editor for that
-exact project. A fixed Python/X11 focus request matches the editor by its exact
+arbitrary executable. The existing server-side `~/.local/bin/studio edit PROJECT` is not modified.
+The client uses its fixed Godot Flatpak/editor arguments after checking for an
+existing editor for that exact project. It discovers the running desktop
+Wayland socket rather than hardcoding wayland-2 (the inspected desktop uses
+wayland-1). Godot, Blender and Krita share this environment resolution and up
+to 30 seconds of startup process confirmation; a connected desktop alone is
+not reported as successful application startup. A fixed Python/X11 focus request matches the editor by its exact
 project path and in-container PID, then raises its window inside the connected stream.
 It needs no wmctrl/xdotool installation inside Wolf. If activation is unavailable,
 Studio reports that the editor is already open instead of launching a replacement.
@@ -298,7 +305,7 @@ existing games, Wolf, Caddy, Tailscale or the installed Studio application.
 
 ## Validation and remaining live checks
 
-The current 96 automated tests cover file transfer framing/progress, conflict confirmation,
+The current 106 automated tests cover file transfer framing/progress, conflict confirmation,
 atomic writes, traversal/symlink/hard-link rejection, documentation preservation,
 current/staged/untracked/deleted snapshots, secret/diff exclusions, size limits,
 ZIP selection/integrity, GUI actions, project persistence, Codex command options,
@@ -316,7 +323,8 @@ passed; the smoke test uses its own fresh Broadway server.
 
 Read-only checks confirmed the working HTTPS apps over Tailscale and the existing
 Blockbench, CozyClay and Onionskyn pages through real temporary Tailscale SSH
-forwards. Those test forwards were closed afterward. Real remote imports/SFTP,
+forwards. Those test forwards were closed afterward. A read-only live Tailscale SFTP mount and native GTK folder display passed
+against this Studio source repository. Real remote imports,
 actual browser rendering/export round trips, real Codex conversations,
 Krita/Blender launches, duplicate-editor behavior in the actual Wolf session,
 Moonlight streaming/focus and real tray panels require live testing after
@@ -333,3 +341,25 @@ Codex metadata compatibility, terminal resumption, native save/export and cold
 Wolf/Moonlight Godot startup still need live verification after installation.
 The supplied approved PNGs are included unchanged. No server deployment
 is required: session/project/desktop helpers are bundled and sent over SSH.
+
+## Corrections within v0.3.0
+
+The existing release and tag are retained. Corrections are committed directly
+to main; after package and packaged-GUI validation the workflow uses
+`gh release upload v0.3.0 ... --clobber` to replace the Debian installer and
+checksum. Release notes identify the asset source commit; the original tag is
+not moved. No other branch/repository/release version is created.
+
+The MacBook installation was not accessible for comparison or GUI testing.
+The previously published package was compared with repository sources, and
+native GUI checks now import modules extracted from the rebuilt Debian package.
+These verify real widget visibility/clicks, folder browsing and local copying,
+plus project-scoped AI action and session selection routing with fixture backends.
+No real Codex session was started or modified. Read-only desktop probes confirmed
+Godot/Blender/Krita installations, versions, project mounts and display readiness;
+their live interactive windows and Moonlight focus still need MacBook testing.
+
+Quit Studio from its tray before reinstalling this corrected same-version
+package, then relaunch it; single-instance activation otherwise raises the old
+running process. Use your package manager's reinstall option if it reports
+0.3.0 already installed. Existing settings/projects/conversations are retained.

@@ -1,16 +1,24 @@
 """Run fixture-only GTK checks on isolated, loopback-bound Broadway displays."""
 import os
+import sys
 from pathlib import Path
 import subprocess
 import tempfile
 import time
 
 root = Path(__file__).resolve().parents[1]
-for display, script in ((':61', 'tests/gui_workflows.py'), (':62', 'tests/gui_smoke.py')):
+package_dir = None
+if '--package' in sys.argv:
+    package_dir = tempfile.TemporaryDirectory(prefix='studio-unpacked-')
+    package = sys.argv[sys.argv.index('--package') + 1]
+    subprocess.run(['dpkg-deb', '--extract', package, package_dir.name], check=True)
+for display, script in ((':61', 'tests/gui_workflows.py'), (':62', 'tests/gui_smoke.py'), (':63', 'tests/gui_browse.py')):
     with tempfile.TemporaryDirectory(prefix='studio-release-gui-') as directory:
         env = dict(os.environ, XDG_RUNTIME_DIR=directory, XDG_CONFIG_HOME=directory,
                    GSETTINGS_BACKEND='memory', GDK_BACKEND='broadway',
                    BROADWAY_DISPLAY=display, PYTHONDONTWRITEBYTECODE='1')
+        if package_dir:
+            env['STUDIO_TEST_LIB'] = str(Path(package_dir.name) / 'usr/lib/optiplex-studio')
         server = subprocess.Popen(['broadwayd', '--address=127.0.0.1', display], env=env,
                                   stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
         try:
@@ -24,3 +32,6 @@ for display, script in ((':61', 'tests/gui_workflows.py'), (':62', 'tests/gui_sm
         finally:
             server.terminate()
             server.wait(timeout=5)
+
+if package_dir:
+    package_dir.cleanup()
