@@ -50,7 +50,7 @@ def remote_args(action, project, session=None):
     command = 'studio-codex ' + ' '.join(x for x in [action, project, session] if x)
     return ['ssh', '-tt' if action != 'list' else '-T',
             '-i', str(KEY), '-o', 'BatchMode=yes', '-o', 'IdentitiesOnly=yes',
-            '-o', 'StrictHostKeyChecking=yes', '-o', 'ForwardAgent=no',
+            '-o', 'StrictHostKeyChecking=yes', '-o', 'UserKnownHostsFile=' + str(KEY.parent / 'known_hosts'), '-o', 'ForwardAgent=no',
             '-o', 'ClearAllForwardings=yes', '-o', 'ConnectTimeout=10',
             USER + '@' + HOST, command]
 
