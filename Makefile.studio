@@ -1,0 +1,12 @@
+CC ?= gcc
+CFLAGS ?= -O2 -Wall -Wextra -Werror
+.PHONY: all package check
+all: build/optiplex-studio
+build/optiplex-studio: studio/launcher.c
+	mkdir -p build
+	$(CC) $(CFLAGS) -Wno-unused-parameter $< -o $@
+check: all
+	/usr/bin/python3 -m unittest discover -s tests -v
+	/usr/bin/python3 -m py_compile studio/app.py studio/core.py studio/project_helper.py studio/project_client.py studio/project_ui.py studio/desktop_helper.py studio/godot_focus.py studio/package.py studio/session_helper.py studio/session_ui.py
+package: check
+	/usr/bin/python3 studio/package.py

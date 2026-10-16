@@ -1,0 +1,12 @@
+/build/
+/dist/
+*.deb
+*.onb
+*.onp
+*.pem
+*.key
+id_ed25519*
+config.ini
+*.log
+.env*
+__pycache__/
