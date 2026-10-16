@@ -269,7 +269,7 @@ class Projects(unittest.TestCase):
                 calls.append(args)
                 if args[1] == 'ps': return 'WolfStudioDesktop_123\n'
                 if args[1] == 'top':
-                    return ('PID COMMAND\n/app/bin/' + app + '\n') if any('exec' in call and '-d' in call for call in calls) else 'PID COMMAND\n'
+                    return ('PID COMMAND\n104 /app/bin/' + app + '\n') if any('exec' in call and '-d' in call for call in calls) else 'PID COMMAND\n'
                 return ''
             with patch('desktop_helper.Path.home', return_value=home), patch('desktop_helper.desktop_environment', return_value={'DISPLAY': ':0', 'XDG_RUNTIME_DIR': '/run/user/wolf', 'WAYLAND_DISPLAY': 'wayland-1'}), patch('desktop_helper.run', side_effect=fake_run), patch('desktop_helper.time.sleep'):
                 result = desktop_helper.handle({'version': 1, 'operation': 'desktop', 'project': 'game', 'application': app})
