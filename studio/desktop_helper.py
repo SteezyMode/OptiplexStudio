@@ -26,8 +26,13 @@ def run(args, timeout=15):
 def matching_process(output, app, project):
     for line in output.splitlines()[1:]:
         try:
-            args = shlex.split(line)
-        except ValueError:
+            # docker top requires a PID column in its ps output. Strip it before
+            # checking the executable/arguments so process matching stays exact.
+            pid, command = line.strip().split(None, 1)
+            if not pid.isdecimal():
+                continue
+            args = shlex.split(command)
+        except (ValueError, IndexError):
             continue
         if not args:
             continue
@@ -97,7 +102,7 @@ def launch_and_confirm(container, application, project):
     # four seconds. Never issue a second launch while checking the first one.
     stable_polls = 0
     for _ in range(60):
-        if matching_process(run(['docker', 'top', container, '-eo', 'args']), application, project):
+        if matching_process(run(['docker', 'top', container, '-eo', 'pid,args']), application, project):
             stable_polls += 1
             if stable_polls >= 3:
                 return
@@ -205,7 +210,7 @@ def handle(request):
                 raise RuntimeError('Exactly one running Wolf Studio Desktop container is required. '
                                    'Use Open Studio Desktop to connect first, then try again. Studio will not start or reconfigure containers itself.')
             container = names[0]
-            processes = run(['docker', 'top', container, '-eo', 'args'])
+            processes = run(['docker', 'top', container, '-eo', 'pid,args'])
             if matching_process(processes, application, project):
                 focused = focus_godot(container, project) if application == 'godot' else False
                 message = application.title() + ' is already open' + (' for ' + project if application == 'godot' else '') + '; no duplicate launched.'
