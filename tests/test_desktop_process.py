@@ -21,6 +21,10 @@ class DesktopProcessTests(unittest.TestCase):
         ps = 'PID COMMAND\n222 /app/bin/krita /tmp/drawing.kra\n'
         self.assertTrue(helper.matching_process(ps, 'krita', '__desktop__'))
 
+    def test_chatgpt_firefox_process_with_pid(self):
+        ps = 'PID COMMAND\n301 /usr/lib/firefox/firefox --new-window https://chatgpt.com/\n'
+        self.assertTrue(helper.matching_process(ps, 'chatgpt', '__desktop__'))
+
     def test_wrapper_does_not_count(self):
         ps = 'PID COMMAND\n222 /bin/sh -c krita\n'
         self.assertFalse(helper.matching_process(ps, 'krita', '__desktop__'))
