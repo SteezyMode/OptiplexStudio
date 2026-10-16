@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=OptiPlex AI Workspace
+Comment=Project-aware Codex conversations and ChatGPT
+Exec=/usr/bin/python3 /opt/optiplex-studio/wolf_ai_workspace.py
+Icon=applications-development
+Terminal=false
+Categories=Development;Utility;
+StartupNotify=true
