@@ -13,7 +13,7 @@ import uuid
 
 BASE = Path.home() / 'StudioProjects/Godot'
 CODEX = Path.home() / '.local/bin/codex'
-NAME = re.compile(r'[A-Za-z0-9_-]{1,128}\\Z')
+NAME = re.compile(r'[A-Za-z0-9_-]{1,128}\Z')
 
 
 def project_path(name):
