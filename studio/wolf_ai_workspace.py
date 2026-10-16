@@ -12,10 +12,18 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib
 
 PROJECTS = Path('/projects/Godot')
-HOST = os.environ.get('STUDIO_CODEX_HOST', '')
+HOST = os.environ.get('STUDIO_CODEX_HOST', '172.17.0.1')
 USER = os.environ.get('STUDIO_CODEX_USER', 'optiplex')
 KEY = Path.home() / '.ssh/studio-codex'
 MAX_OUTPUT = 1024 * 1024
+
+
+def format_timestamp(value):
+    from datetime import datetime
+    try:
+        return datetime.fromtimestamp(int(value)).strftime('%Y-%m-%d %H:%M')
+    except (ValueError, TypeError, OverflowError, OSError):
+        return 'Unknown'
 
 
 def project_names():
@@ -128,7 +136,7 @@ class Workspace(Gtk.Window):
                             if not re.fullmatch(r'[a-fA-F0-9-]{36}', ident):
                                 continue
                             self.model.append([str(session.get('title') or ident)[:120],
-                                               str(session.get('updatedAt') or 'Unknown'), ident])
+                                               format_timestamp(session.get('updatedAt')), ident])
                         self.status.set_text(f'{len(self.model)} conversations available for {project}.')
                     self.busy = False
                     self.sensitivity()
