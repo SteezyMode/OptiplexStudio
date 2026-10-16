@@ -107,8 +107,8 @@ class DesktopEnvironment(unittest.TestCase):
                 calls.append(args)
                 if args[1]=='top':
                     polls[0]+=1
-                    if polls[0]<12:return 'COMMAND\n'
-                    return 'COMMAND\n/app/bin/'+application+(' --editor --path /projects/Godot/game' if application=='godot' else '')+'\n'
+                    if polls[0]<12:return 'PID COMMAND\n'
+                    return 'PID COMMAND\n123 /app/bin/'+application+(' --editor --path /projects/Godot/game' if application=='godot' else '')+'\n'
                 return ''
             with patch('desktop_helper.desktop_environment',return_value=self.env), patch('desktop_helper.run',side_effect=run), patch('desktop_helper.time.sleep'):
                 desktop_helper.launch_and_confirm('WolfStudioDesktop_123',application,'game')
