@@ -83,7 +83,7 @@ class DirectDesktop(unittest.TestCase):
                 (child / 'cmdline').write_bytes(b'\0'.join(arg.encode() for arg in args))
             with patch('godot_focus.Path', side_effect=lambda value: root if value == '/proc' else real_path(value)):
                 self.assertEqual(godot_focus.editor_pids('game'), {101})
-            self.assertTrue(desktop_helper.matching_process('COMMAND\n/app/bin/godot -e --path /projects/Godot/game/\n', 'godot', 'game'))
+            self.assertTrue(desktop_helper.matching_process('PID COMMAND\n101 /app/bin/godot -e --path /projects/Godot/game/\n', 'godot', 'game'))
         with self.assertRaises(ValueError):
             godot_focus.focus('../other')
 
