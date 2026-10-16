@@ -144,6 +144,7 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
         grid(tools, [('Godot', lambda _: self.action('edit'), 'godot'),
                      ('Blender', lambda _: self.open_desktop_application('blender'), None),
                      ('Krita', lambda _: self.open_desktop_application('krita'), None),
+                     ('ChatGPT in Wolf', lambda _: self.open_desktop_application('chatgpt'), None),
                      ('Moonlight', self.open_moonlight, None)] + [
                      (name, lambda _, n=name, u=url: self.creative_tool(n, u), None) for name, url in core.APPS])
         tools.pack_start(self.label('Desktop applications use the existing Wolf session. Godot opens or focuses the selected Godot project. Blender and Krita can also launch independently.', 'helper'), False, False, 0)
