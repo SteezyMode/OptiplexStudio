@@ -4,10 +4,10 @@
 FROM optiplex-studio-desktop:v2
 
 USER root
-# Ubuntu 25.04 (Plucky) has reached EOL; use Ubuntu's historical mirror.
-# This is a short-term compatibility workaround, not a maintained OS baseline.
+# Ubuntu 25.04 is end-of-life. Its Plucky package index currently remains
+# on archive.ubuntu.com; check repository availability before building.
+# Migrate to a supported base image for a maintained release.
 RUN set -eu; \
-    sed -i 's|http://archive.ubuntu.com/ubuntu/|http://old-releases.ubuntu.com/ubuntu/|g; s|http://security.ubuntu.com/ubuntu/|http://old-releases.ubuntu.com/ubuntu/|g' /etc/apt/sources.list.d/ubuntu.sources; \
     apt-get update; \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends openssh-client; \
     rm -rf /var/lib/apt/lists/*
