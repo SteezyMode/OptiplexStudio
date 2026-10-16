@@ -233,11 +233,11 @@ class Projects(unittest.TestCase):
                 client.request(CONFIG, 'game', 'docs')
 
     def test_desktop_process_matching_avoids_wrong_project_and_wrappers(self):
-        listing = 'COMMAND\n/app/bin/godot --editor --path /projects/Godot/game\n'
+        listing = 'PID COMMAND\n101 /app/bin/godot --editor --path /projects/Godot/game\n'
         self.assertTrue(desktop_helper.matching_process(listing, 'godot', 'game'))
         self.assertFalse(desktop_helper.matching_process(listing, 'godot', 'other'))
-        self.assertFalse(desktop_helper.matching_process('COMMAND\n/bin/sh -c "godot --editor --path /projects/Godot/game"', 'godot', 'game'))
-        self.assertTrue(desktop_helper.matching_process('COMMAND\n/app/bin/krita', 'krita', 'game'))
+        self.assertFalse(desktop_helper.matching_process('PID COMMAND\n102 /bin/sh -c "godot --editor --path /projects/Godot/game"', 'godot', 'game'))
+        self.assertTrue(desktop_helper.matching_process('PID COMMAND\n103 /app/bin/krita', 'krita', 'game'))
 
     def test_desktop_helper_reuses_godot_and_has_no_container_lifecycle(self):
         home = Path(self.temp.name) / 'home'
@@ -248,7 +248,7 @@ class Projects(unittest.TestCase):
         def fake_run(args, **kwargs):
             calls.append(args)
             if args[1] == 'ps': return 'WolfStudioDesktop_123\n'
-            if args[1] == 'top': return 'COMMAND\n/app/bin/godot --editor --path /projects/Godot/game\n'
+            if args[1] == 'top': return 'PID COMMAND\n101 /app/bin/godot --editor --path /projects/Godot/game\n'
             raise AssertionError('Unexpected mutation or duplicate launch')
         with patch('desktop_helper.Path.home', return_value=home), patch('desktop_helper.desktop_environment', return_value={'DISPLAY': ':0', 'XDG_RUNTIME_DIR': '/run/user/wolf', 'WAYLAND_DISPLAY': 'wayland-1'}), patch('desktop_helper.run', side_effect=fake_run), patch('desktop_helper.focus_godot', return_value=True) as focus:
             result = desktop_helper.handle({'version': 1, 'operation': 'desktop', 'project': 'game', 'application': 'godot'})
@@ -269,7 +269,7 @@ class Projects(unittest.TestCase):
                 calls.append(args)
                 if args[1] == 'ps': return 'WolfStudioDesktop_123\n'
                 if args[1] == 'top':
-                    return ('COMMAND\n/app/bin/' + app + '\n') if any('exec' in call and '-d' in call for call in calls) else 'COMMAND\n'
+                    return ('PID COMMAND\n/app/bin/' + app + '\n') if any('exec' in call and '-d' in call for call in calls) else 'PID COMMAND\n'
                 return ''
             with patch('desktop_helper.Path.home', return_value=home), patch('desktop_helper.desktop_environment', return_value={'DISPLAY': ':0', 'XDG_RUNTIME_DIR': '/run/user/wolf', 'WAYLAND_DISPLAY': 'wayland-1'}), patch('desktop_helper.run', side_effect=fake_run), patch('desktop_helper.time.sleep'):
                 result = desktop_helper.handle({'version': 1, 'operation': 'desktop', 'project': 'game', 'application': app})
