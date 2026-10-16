@@ -35,7 +35,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if gh release view v0.3.0 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo 'Release v0.3.0 already exists; refusing to replace it.' >&2
+            if [ "$(gh release view v0.3.0 --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)" = false ]; then
+              echo 'Release v0.3.0 is already published; leaving its tag and assets unchanged.'
+              exit 0
+            fi
+            echo 'An unpublished draft already exists; review it before retrying.' >&2
             exit 1
           fi
           gh release create v0.3.0 dist/optiplex-studio_0.3.0_amd64.deb dist/optiplex-studio_0.3.0_amd64.deb.sha256 --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title 'OptiPlex Studio 0.3.0' --notes-file RELEASE-0.3.0.md --draft
