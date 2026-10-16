@@ -15,3 +15,5 @@ make -f Makefile.studio package
 ```
 
 The application is independently installable alongside OptiPlex NOW. Building or publishing it does not install it or change Wolf/server services. Browser tools use explicit export/import workflows; ChatGPT snapshots require manual attachment.
+
+Release packages include the approved PNG icons unchanged and a SHA-256 sidecar. The release checks cover 96 automated regressions, isolated native GTK workflows and Debian payload validation. Live Wolf/Godot, Codex resumption and real tray-panel checks are documented separately in the release notes.
