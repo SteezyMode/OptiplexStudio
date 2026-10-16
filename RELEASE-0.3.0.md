@@ -101,3 +101,5 @@ checks before `gh release upload v0.3.0 ... --clobber`.
 - Add a ChatGPT-in-Wolf launcher and project-specific conversation picker access.
 - Add `docker/studio-desktop-v3.Dockerfile`, the graphical Wolf AI Workspace, and a project-restricted SSH Codex gate. The v3 image and forced-command SSH key must be configured on the host separately; the client `.deb` does not install Wolf or manage its running configuration.
 - Confirmed on the reference OptiPlex: v3 desktop launched and project-scoped Codex session retrieval succeeded. The host's Codex sessions remain persistent and separate from ChatGPT's web history.
+
+Release build: final integrated Studio client and Wolf AI Workspace [release 0.3.0]
