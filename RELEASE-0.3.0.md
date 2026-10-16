@@ -103,3 +103,5 @@ checks before `gh release upload v0.3.0 ... --clobber`.
 - Confirmed on the reference OptiPlex: v3 desktop launched and project-scoped Codex session retrieval succeeded. The host's Codex sessions remain persistent and separate from ChatGPT's web history.
 
 Release build: final integrated Studio client and Wolf AI Workspace [release 0.3.0]
+
+CI: refreshed PID-column fixtures to match the verified Docker process query. [release 0.3.0]
