@@ -25,6 +25,7 @@ jobs:
           sudo apt-get install -y build-essential python3 python3-gi python3-cairo python3-gi-cairo gir1.2-gtk-3.0 libgtk-3-bin dbus-x11 desktop-file-utils binutils gvfs-backends gvfs-fuse
       - name: Build and test
         run: |
+          /usr/bin/python3 -m unittest discover -s tests -p 'test_desktop_process.py' -v
           make -f Makefile.studio package
           /usr/bin/python3 -B tests/run_gtk.py --package dist/optiplex-studio_0.3.0_amd64.deb
           /usr/bin/python3 -B studio/validate_package.py
