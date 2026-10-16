@@ -94,3 +94,10 @@ configuration, NOW, Wolf or other server services were changed.
 Only the existing v0.3.0 installer/checksum assets and release notes are updated;
 the original release tag is retained. The release workflow requires successful
 checks before `gh release upload v0.3.0 ... --clobber`.
+
+## Final Studio Desktop integration (October 2026)
+
+- Fix Godot/Krita/Blender Docker process detection by requesting a PID column and parsing it.
+- Add a ChatGPT-in-Wolf launcher and project-specific conversation picker access.
+- Add `docker/studio-desktop-v3.Dockerfile`, the graphical Wolf AI Workspace, and a project-restricted SSH Codex gate. The v3 image and forced-command SSH key must be configured on the host separately; the client `.deb` does not install Wolf or manage its running configuration.
+- Confirmed on the reference OptiPlex: v3 desktop launched and project-scoped Codex session retrieval succeeded. The host's Codex sessions remain persistent and separate from ChatGPT's web history.
