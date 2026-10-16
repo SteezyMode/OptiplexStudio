@@ -13,7 +13,7 @@ import subprocess
 import sys
 import time
 
-APPS = {'godot': 'org.godotengine.Godot', 'blender': 'org.blender.Blender', 'krita': 'org.kde.krita'}
+APPS = {'godot': 'org.godotengine.Godot', 'blender': 'org.blender.Blender', 'krita': 'org.kde.krita', 'chatgpt': 'firefox'}
 
 
 def run(args, timeout=15):
@@ -44,6 +44,9 @@ def matching_process(output, app, project):
             target = '/projects/Godot/' + project
             paths = [args[i + 1] for i, arg in enumerate(args[:-1]) if arg == '--path'] + [arg[len('--path='):] for arg in args if arg.startswith('--path=')]
             if any(str(PurePosixPath(path)) == target for path in paths):
+                return True
+        elif app == 'chatgpt':
+            if program in ('firefox', 'firefox-esr'):
                 return True
         elif program == app or program.startswith(app + '.'):
             return True
@@ -91,10 +94,14 @@ def environment_args(values):
 
 def launch_and_confirm(container, application, project):
     values = desktop_environment(container)
-    run(['docker', 'exec', '-u', 'retro', container, 'flatpak', 'info', '--show-ref', APPS[application]])
+    if application != 'chatgpt':
+        run(['docker', 'exec', '-u', 'retro', container, 'flatpak', 'info', '--show-ref', APPS[application]])
     command = ['docker', 'exec', '-d', '-u', 'retro'] + environment_args(values)
-    command += ['-w', '/home/retro' if project == '__desktop__' else '/projects/Godot/' + project,
-                container, 'flatpak', 'run', APPS[application]]
+    command += ['-w', '/home/retro' if project == '__desktop__' or application == 'chatgpt' else '/projects/Godot/' + project, container]
+    if application == 'chatgpt':
+        command += ['firefox', '--new-window', 'https://chatgpt.com/']
+    else:
+        command += ['flatpak', 'run', APPS[application]]
     if application == 'godot':
         command += ['--editor', '--path', '/projects/Godot/' + project]
     run(command)
@@ -188,7 +195,7 @@ def handle(request):
     base = Path.home() / 'StudioProjects/Godot'
     fd = os.open('/', os.O_RDONLY | os.O_DIRECTORY)
     try:
-        for part in (Path.home().parts[1:] if project == '__desktop__' and application != 'godot' else base.parts[1:] + (project,)):
+        for part in (Path.home().parts[1:] if (project == '__desktop__' or application == 'chatgpt') and application != 'godot' else base.parts[1:] + (project,)):
             child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=fd)
             os.close(fd)
             fd = child
