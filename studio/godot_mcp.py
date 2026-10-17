@@ -40,6 +40,22 @@ def project_configuration(project_dir, executable=None):
     return target, content
 
 
+def bridge_status(host="127.0.0.1", port=9080):
+    """Read-only TCP reachability probe for the local Godot addon bridge.
+
+    A listening port does NOT prove a functioning MCP connection or correct
+    addon identity; verify the actual MCP tools from Codex separately.
+    """
+    import socket
+    if host != "127.0.0.1" or port != 9080:
+        raise ValueError("Only the expected loopback Godot bridge can be checked.")
+    try:
+        with socket.create_connection((host, port), timeout=1):
+            return True
+    except (OSError, TimeoutError):
+        return False
+
+
 def enable(project_dir, executable=None):
     target, content = project_configuration(project_dir, executable)
     target.parent.mkdir(mode=0o700, exist_ok=True)
@@ -55,7 +71,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Opt in one trusted Godot project to local Codex MCP")
     parser.add_argument("project", help="Existing local Godot project directory")
     parser.add_argument("--executable", help="Path to previously reviewed and installed MCP executable")
-    parser.add_argument("--enable", action="store_true", help="Write project-local configuration (create-only)")
+    parser.add_argument("--enable", action="store_true", help="Write project-local configuration (create-only)")\n    parser.add_argument("--check-bridge", action="store_true", help="Probe local editor listener without making changes")
     options = parser.parse_args()
     if options.enable:
         print("Created:", enable(options.project, options.executable))

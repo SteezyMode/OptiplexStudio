@@ -35,3 +35,13 @@ On disposable project only: review the exact scene edit, enable the minimum need
 ## Architecture constraints
 
 The Python MCP server uses **stdio** with Codex and maintains a loopback WebSocket bridge with Godot (default ws://127.0.0.1:9080; it is still a network listener, but bound to loopback only). Multiple concurrent stdio MCP servers competing for the same bridge port may fail; use one active Codex session for the pilot. Keep the editor independently useful if the MCP process exits. Never expose the bridge on a public address or grant Docker/server management access.
+
+## Fast local bridge diagnostic (non-mutating)
+
+After starting the Godot addon in the XFCE session, run this **on that same machine**:
+
+```sh
+python3 /usr/lib/optiplex-studio/godot_mcp.py /path/to/disposable/project --check-bridge
+```
+
+This command reports only whether a TCP listener accepts connections on **127.0.0.1:9080**. It does not open or change project files, enable the addon, authenticate a server, or prove MCP readiness. A detected listener could be an unrelated process. The acceptance gate remains observing real Godot tools with `codex /mcp` and reading a scene without modifying it. If the pinned addon uses a different loopback port, check the upstream addon configuration manually rather than changing the probe to contact arbitrary addresses.
