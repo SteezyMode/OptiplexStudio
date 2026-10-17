@@ -240,7 +240,7 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
     def selection_changed(self, _):
         name = self.combo.get_active_id()
         selected = any(p['name'] == name for p in self.rows)
-        for b in self.project_buttons + getattr(self, 'tray_project_items', []):
+        for b in self.project_buttons + getattr(self, 'tray_project_items', []) + getattr(self, 'tray_creative_items', []):
             b.set_sensitive(selected and not self.busy)
         p = next((p for p in self.rows if p['name'] == name), {})
         for button in getattr(self, 'godot_buttons', []):
@@ -426,6 +426,27 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
     def initialize_tray(self):
         self.menu = Gtk.Menu()
         self.tray_project_items = []
+        # Optional creative shortcuts use exactly the same launch handlers as the dashboard.
+        # Missing/disabled shortcuts never affect the main project or connection actions.
+        creative = Gtk.Menu()
+        self.tray_creative_items = []
+        for label, callback, project_required in [
+            ('Godot', lambda: self.action('edit'), True),
+            ('Blender', lambda: self.open_desktop_application('blender'), False),
+            ('Krita', lambda: self.open_desktop_application('krita'), False),
+        ]:
+            if label not in self.config.get('tray_creative_tools', ['Godot', 'Blender', 'Krita']):
+                continue
+            item = Gtk.MenuItem(label=label)
+            item.connect('activate', lambda _, cb=callback: cb())
+            creative.append(item)
+            if project_required:
+                item.set_sensitive(False)
+                self.tray_creative_items.append(item)
+        if creative.get_children():
+            group = Gtk.MenuItem(label='Creative Tools')
+            group.set_submenu(creative)
+            self.menu.append(group)
         for text, callback in [('Open OptiPlex Studio', self.restore), ('Open Studio Desktop', lambda: (self.restore(), self.open_studio_desktop())), ('New Codex conversation', lambda: (self.restore(), self.action('code'))), ('Resume conversation', lambda: (self.restore(), self.session_browser())), ('Studio workspace', lambda: self.open_url('https://studio.monumentrisk.com')), ('Settings', lambda: (self.restore(), self.settings(None))), ('Quit', self.quit)]:
             item = Gtk.MenuItem(label=text)
             item.connect('activate', lambda _, cb=callback: cb())
