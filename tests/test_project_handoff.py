@@ -1,4 +1,4 @@
-"""Contract tests for project-based AI context handoff."""
+"""Contract checks for project-scoped AI instructions and durable documents."""
 import pathlib
 import sys
 import unittest
@@ -8,23 +8,34 @@ from project_helper import WORKFLOW, templates
 
 
 class ProjectHandoffTests(unittest.TestCase):
-    def test_agent_instructions_identical_to_codex_guidance(self):
+    def test_codex_guidance_matches_written_agent_instructions(self):
         docs = templates("Example", "Godot")
         self.assertIn(WORKFLOW.replace("PROJECT_NAME", "Example"), docs["AGENTS.md"])
+        self.assertIn("## Scope and authority", docs["AGENTS.md"])
+        self.assertIn("## Verification and delivery", docs["AGENTS.md"])
 
-    def test_handoff_is_durable_and_project_scoped(self):
+    def test_security_and_verification_contract(self):
         for name in ("GAME.md", "PROGRESS.md", "DECISIONS.md", "AGENTS.md"):
             self.assertIn(name, WORKFLOW)
-        self.assertIn("conversation is not the source of truth", WORKFLOW)
-        self.assertIn("what is still uncertain", WORKFLOW)
-        self.assertIn("do not change Wolf", WORKFLOW)
-        self.assertIn("Do not commit unless explicitly requested", WORKFLOW)
+        for required in ("chat history is supplementary", "untrusted data", "Do not commit",
+                         "Headless validation does not replace", "Do not claim"):
+            self.assertIn(required, WORKFLOW)
 
-    def test_templates_cover_non_godot_project_types(self):
-        for kind in ("Blank", "Music/Audio", "Animation", "3D"):
-            docs = templates("Example", kind)
-            self.assertEqual(set(docs), {"GAME.md", "PROGRESS.md", "DECISIONS.md", "AGENTS.md"})
-            self.assertIn(kind, docs["GAME.md"])
+    def test_all_project_types_have_reviewable_documents(self):
+        for kind in ("Godot", "Blank", "Music/Audio", "Animation", "3D"):
+            with self.subTest(kind=kind):
+                docs = templates("Example", kind)
+                self.assertEqual(set(docs), {"GAME.md", "PROGRESS.md", "DECISIONS.md", "AGENTS.md"})
+                self.assertIn("## Acceptance criteria", docs["GAME.md"])
+                self.assertIn("## Validation evidence", docs["PROGRESS.md"])
+                self.assertIn("## Next actionable step", docs["PROGRESS.md"])
+                self.assertIn("## Risks and blockers", docs["PROGRESS.md"])
+                self.assertIn("## Decision template", docs["DECISIONS.md"])
+                self.assertNotIn(r"\n", docs["GAME.md"])
+
+    def test_invalid_project_types_are_rejected(self):
+        with self.assertRaises(ValueError):
+            templates("Example", "Unsupported")
 
 
 if __name__ == "__main__":
