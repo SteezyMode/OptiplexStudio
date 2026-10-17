@@ -211,9 +211,14 @@ def open_application(config, url):
             errors.close()
 
 
-def remote_command(action, name, user):
+def valid_ssh_user(user):
     if not isinstance(user, str) or not re.fullmatch(r'[a-zA-Z_][a-zA-Z0-9_-]{0,63}', user):
         raise ValueError('Set a valid SSH user in Settings.')
+    return user
+
+
+def remote_command(action, name, user):
+    valid_ssh_user(user)
     home = '/root' if user == 'root' else f'/home/{user}' 
     if not valid_name(name):
         raise ValueError('Use 1–128 letters, numbers, hyphens or underscores for the project name.')
@@ -229,8 +234,7 @@ def remote_command(action, name, user):
 
 def ssh_args(config, action, name, interactive=False):
     host, user = tailscale_ip(config), config.get('user', '')
-    if not re.fullmatch(r'[a-zA-Z_][a-zA-Z0-9_-]{0,63}', user):
-        raise ValueError('Set a valid SSH user in Settings.')
+    valid_ssh_user(user)
     return ['ssh', '-tt' if interactive else '-T', '-o', 'Hostname=' + host,
             '-o', 'ProxyCommand=none', '-o', 'ProxyJump=none', '-o', 'CanonicalizeHostname=no',
             '-o', 'ConnectTimeout=12',

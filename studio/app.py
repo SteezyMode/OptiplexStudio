@@ -240,7 +240,7 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
     def selection_changed(self, _):
         name = self.combo.get_active_id()
         selected = any(p['name'] == name for p in self.rows)
-        for b in self.project_buttons + getattr(self, 'tray_project_items', []):
+        for b in self.project_buttons + getattr(self, 'tray_project_items', []) + getattr(self, 'tray_creative_items', []):
             b.set_sensitive(selected and not self.busy)
         p = next((p for p in self.rows if p['name'] == name), {})
         for button in getattr(self, 'godot_buttons', []):
@@ -377,11 +377,22 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
             box.pack_start(self.label(title, 'helper'), False, False, 5)
             entries[key] = Gtk.Entry(text=str(self.config.get(key, '')))
             box.pack_start(entries[key], False, False, 5)
+        box.pack_start(self.label('Tray → Creative Tools (takes effect after restarting Studio)', 'helper'), False, False, 5)
+        creative_options = {}
+        enabled_creative = self.config.get('tray_creative_tools', ['Godot', 'Blender', 'Krita'])
+        if not isinstance(enabled_creative, list):
+            enabled_creative = ['Godot', 'Blender', 'Krita']
+        for tool in ('Godot', 'Blender', 'Krita'):
+            option = Gtk.CheckButton(label=tool)
+            option.set_active(tool in enabled_creative)
+            creative_options[tool] = option
+            box.pack_start(option, False, False, 0)
         box.pack_start(self.label('Uses existing SSH keys and trusted host keys.\nComplete Tailscale and SSH pairing using your existing setup.\nNo passwords or NOW settings are stored here.', 'helper'), False, False, 8)
         dialog.show_all()
         while dialog.run() == Gtk.ResponseType.OK:
             candidate = dict(self.config)
             candidate.update({k: e.get_text().strip() for k, e in entries.items()})
+            candidate['tray_creative_tools'] = [tool for tool, widget in creative_options.items() if widget.get_active()]
             try:
                 core.ssh_args(candidate, 'edit', 'validation')
                 CONFIG.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -426,6 +437,28 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
     def initialize_tray(self):
         self.menu = Gtk.Menu()
         self.tray_project_items = []
+        # Optional creative shortcuts use exactly the same launch handlers as the dashboard.
+        # Missing/disabled shortcuts never affect the main project or connection actions.
+        creative = Gtk.Menu()
+        self.tray_creative_items = []
+        for label, callback, project_required in [
+            ('Godot', lambda: self.action('edit'), True),
+            ('Blender', lambda: self.open_desktop_application('blender'), False),
+            ('Krita', lambda: self.open_desktop_application('krita'), False),
+        ]:
+            enabled = getattr(self, 'config', {}).get('tray_creative_tools', ['Godot', 'Blender', 'Krita'])
+            if not isinstance(enabled, list) or label not in enabled:
+                continue
+            item = Gtk.MenuItem(label=label)
+            item.connect('activate', lambda _, cb=callback: cb())
+            creative.append(item)
+            if project_required:
+                item.set_sensitive(False)
+                self.tray_creative_items.append(item)
+        if creative.get_children():
+            group = Gtk.MenuItem(label='Creative Tools')
+            group.set_submenu(creative)
+            self.menu.append(group)
         for text, callback in [('Open OptiPlex Studio', self.restore), ('Open Studio Desktop', lambda: (self.restore(), self.open_studio_desktop())), ('New Codex conversation', lambda: (self.restore(), self.action('code'))), ('Resume conversation', lambda: (self.restore(), self.session_browser())), ('Studio workspace', lambda: self.open_url('https://studio.monumentrisk.com')), ('Settings', lambda: (self.restore(), self.settings(None))), ('Quit', self.quit)]:
             item = Gtk.MenuItem(label=text)
             item.connect('activate', lambda _, cb=callback: cb())
