@@ -27,32 +27,25 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential python3 python3-gi python3-cairo python3-gi-cairo gir1.2-gtk-3.0 libgtk-3-bin dbus-x11 desktop-file-utils binutils gvfs-backends gvfs-fuse
 
-      - name: Verify tag and version are consistent
-        env:
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          case "$RELEASE_TAG" in
-            v[0-9]*.[0-9]*.[0-9]*) ;;
-            *) echo "Expected version tag vMAJOR.MINOR.PATCH"; exit 1 ;;
-          esac
-          test "$RELEASE_TAG" = "v$(/usr/bin/python3 - <<'PY'
-          import re
-          from pathlib import Path
-          text = Path('studio/package.py').read_text()
-          match = re.search(r'(?m)^VERSION\s*=\s*["\x27]([^"\x27]+)', text)
-          if not match:
-              raise SystemExit('Cannot determine package version')
-          print(match.group(1))
-          PY
-          )"
-
       - name: Build, test, and validate
         run: |
           make -f Makefile.studio package
           /usr/bin/python3 -B tests/run_gtk.py --package "dist/optiplex-studio_${GITHUB_REF_NAME#v}_amd64.deb"
           /usr/bin/python3 -B studio/validate_package.py
-          cd dist
-          sha256sum "optiplex-studio_${GITHUB_REF_NAME#v}_amd64.deb" > "optiplex-studio_${GITHUB_REF_NAME#v}_amd64.deb.sha256"
+
+      - name: Verify tag matches package metadata and checksum
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          version="${RELEASE_TAG#v}"
+          case "$version" in
+            *[!0-9.]* | .* | *..* | *.) echo "Invalid version tag"; exit 1 ;;
+          esac
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || exit 1
+          package="dist/optiplex-studio_${version}_amd64.deb"
+          test -f "$package"
+          test "$(dpkg-deb -f "$package" Version)" = "$version"
+          (cd dist && sha256sum "optiplex-studio_${version}_amd64.deb" > "optiplex-studio_${version}_amd64.deb.sha256")
 
       - name: Publish new release only
         env:
