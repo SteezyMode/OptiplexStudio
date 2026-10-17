@@ -7,11 +7,11 @@ This is **not an installation performed on the XFCE server**. It documents the s
 - Godot 4.4 or newer on the Studio XFCE desktop.
 - An isolated, backed-up disposable Godot project with its own `project.godot`.
 - Codex installed and working within that project. Codex must trust project-local configuration before loading `.codex/config.toml`.
-- Reviewed release of [hybridindie/godot-mcp](https://github.com/hybridindie/godot-mcp/releases) pinned to the **same** release for the Python MCP server and Godot addon. Pilot reference: `2026.10.15` (verify downloaded assets/checksums before installation).
+- Reviewed release of [hybridindie/godot-mcp](https://github.com/hybridindie/godot-mcp/releases) pinned to the **same** release for the Python MCP server and Godot addon. Pilot reference: `2026.10.12` (verify downloaded assets/checksums before installation).
 
 ## XFCE-host installation (explicit user action)
 
-1. Inspect and approve upstream code and a pinned release. Install its Python MCP server in an isolated user-owned tool environment (such as `uv tool install godot-editor-mcp==2026.10.15`). Do **not** install via Docker; do not expose ports.
+1. Inspect and approve upstream code and a pinned release. Install its Python MCP server in an isolated user-owned tool environment (such as `uv tool install godot-editor-mcp==2026.10.12`). Do **not** install via Docker; do not expose ports.
 2. Unpack the matching release's `godot_mcp_addon.zip` into the disposable Godot project so `addons/godot_mcp` exists. Enable the Godot addon under Project Settings → Plugins.
 3. In the **same host and project** where Codex runs, review what the project-local configuration generator proposes:
    ```sh
@@ -34,4 +34,4 @@ On disposable project only: review the exact scene edit, enable the minimum need
 
 ## Architecture constraints
 
-The Python MCP server uses **stdio** with Codex and maintains a loopback WebSocket bridge with Godot. Multiple concurrent stdio MCP servers competing for the same bridge port may fail; use one active Codex session for the pilot. Keep the editor independently useful if the MCP process exits. Never expose the bridge on a public address or grant Docker/server management access.
+The Python MCP server uses **stdio** with Codex and maintains a loopback WebSocket bridge with Godot (default ws://127.0.0.1:9080; it is still a network listener, but bound to loopback only). Multiple concurrent stdio MCP servers competing for the same bridge port may fail; use one active Codex session for the pilot. Keep the editor independently useful if the MCP process exits. Never expose the bridge on a public address or grant Docker/server management access.
