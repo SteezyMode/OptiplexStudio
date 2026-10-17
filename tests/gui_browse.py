@@ -13,7 +13,7 @@ project_helper.create_project(base,'game')
 project_client.request=lambda config,project,operation,progress=None,**fields: project_helper.handle(dict(fields,version=1,project=project,operation=operation),base)
 app.core.projects=lambda config:[{'name':'game','type':'Godot'}]
 s=app.Studio();s.config={'host':'100.100.100.101','user':'optiplex'}
-phase=['ready'];errors=[];actions=[];started=time.monotonic()
+phase=['ready'];errors=[];actions=[];started=time.monotonic();last_select=[started]
 original_init=file_browser.RemoteFolder.__init__
 def init(self,parent,uri,finished,status):
     original_init(self,parent,uri,finished,status)
@@ -44,6 +44,7 @@ def drive():
                     if phase[0]=='files':
                         dialog.select_file(Gio.File.new_for_path(str(base/'game/GAME.md')))
                         phase[0]='select-download'
+                        last_select[0]=time.monotonic()
                     else:
                         phase[0]='ai-start'
                         dialog.response(Gtk.ResponseType.CLOSE)
@@ -52,6 +53,9 @@ def drive():
             if dialog and dialog.get_file() and dialog.get_file().get_basename()=='GAME.md':
                 phase[0]='save-copy'
                 dialog.response(Gtk.ResponseType.OK)
+            elif dialog and time.monotonic()-last_select[0]>1:
+                dialog.select_file(Gio.File.new_for_path(str(base/'game/GAME.md')))
+                last_select[0]=time.monotonic()
         elif phase[0]=='save-copy':
             dialog=next((w for w in dialogs if w.get_title()=='Save Local Copy'),None)
             if dialog:
