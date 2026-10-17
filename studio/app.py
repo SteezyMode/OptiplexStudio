@@ -377,11 +377,22 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
             box.pack_start(self.label(title, 'helper'), False, False, 5)
             entries[key] = Gtk.Entry(text=str(self.config.get(key, '')))
             box.pack_start(entries[key], False, False, 5)
+        box.pack_start(self.label('Tray → Creative Tools (takes effect after restarting Studio)', 'helper'), False, False, 5)
+        creative_options = {}
+        enabled_creative = self.config.get('tray_creative_tools', ['Godot', 'Blender', 'Krita'])
+        if not isinstance(enabled_creative, list):
+            enabled_creative = ['Godot', 'Blender', 'Krita']
+        for tool in ('Godot', 'Blender', 'Krita'):
+            option = Gtk.CheckButton(label=tool)
+            option.set_active(tool in enabled_creative)
+            creative_options[tool] = option
+            box.pack_start(option, False, False, 0)
         box.pack_start(self.label('Uses existing SSH keys and trusted host keys.\nComplete Tailscale and SSH pairing using your existing setup.\nNo passwords or NOW settings are stored here.', 'helper'), False, False, 8)
         dialog.show_all()
         while dialog.run() == Gtk.ResponseType.OK:
             candidate = dict(self.config)
             candidate.update({k: e.get_text().strip() for k, e in entries.items()})
+            candidate['tray_creative_tools'] = [tool for tool, widget in creative_options.items() if widget.get_active()]
             try:
                 core.ssh_args(candidate, 'edit', 'validation')
                 CONFIG.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
