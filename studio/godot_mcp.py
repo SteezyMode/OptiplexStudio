@@ -47,3 +47,19 @@ def enable(project_dir, executable=None):
     with target.open("x", encoding="utf-8") as stream:
         stream.write(content)
     return target
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Opt in one trusted Godot project to local Codex MCP")
+    parser.add_argument("project", help="Existing local Godot project directory")
+    parser.add_argument("--executable", help="Path to previously reviewed and installed MCP executable")
+    parser.add_argument("--enable", action="store_true", help="Write project-local configuration (create-only)")
+    options = parser.parse_args()
+    if options.enable:
+        print("Created:", enable(options.project, options.executable))
+    else:
+        destination, proposed = project_configuration(options.project, options.executable)
+        print("Would create:", destination)
+        print(proposed)
