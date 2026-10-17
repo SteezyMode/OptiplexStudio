@@ -37,3 +37,14 @@ No automatic multi-tool agent with broad server privileges; no persistent GPU-in
 ## Project-aware tray design
 
 Keep a small launcher and use an **opt-in** tray submenu named Creative Tools (Godot, Blender, Krita, ChatGPT, browser editors) that reuses existing launch callbacks. Only enable project-specific actions when a valid project is selected. Keep project import, setup and connection recovery in the client. Direct Godot launch must focus an existing process where available, not spawn duplicates. Verify submenu behavior with and without an active Wolf session before removing dashboard controls.
+
+## Additional creative editor candidates (verified documentation, not deployments)
+
+| Workflow | Integration candidate | Integration reality | Pilot gate |
+| --- | --- | --- | --- |
+| Blockbench low-poly modeling | [sosadly/blockbench-mcp](https://github.com/sosadly/blockbench-mcp) | 70-tool MCP bridge requires **Blockbench desktop**, not the browser editor; local HTTP listener and stdio adapter | Install a pinned, reviewed desktop build in disposable XFCE test environment; keep loopback-only, inspect before edit, verify native project export and undo |
+| CozyClay previsualization | [NomaDamas/CozyClay](https://github.com/NomaDamas/CozyClay) | Has native MCP, CLI and embedded AI agent for shots/characters/camera; browser UI can stay | Prefer one control surface (MCP via Codex), test read-only scene then a reversible camera change, preserve .cclayproject; do not configure motion GPU worker initially |
+| Piskel pixel art | [Ne9roni/piskel-cli](https://github.com/Ne9roni/piskel-cli) | Scripts native .piskel data and exports; no additional MCP daemon required | Audit CLI package and pinned dependencies; create disposable sprite, reopen in existing browser Piskel, export frames and verify pixels/animation |
+| Onionskyn vector animation | [papptimus/Onionskyn](https://github.com/papptimus/Onionskyn) | Browser-first; no confirmed maintained MCP integration | Keep launcher/export only; revisit if a safe documented API appears |
+
+**No automatic install:** These are third-party candidates, not verified production Studio extensions. In particular, do not change network listeners, start unrestricted JavaScript evaluation endpoints, or download code through unreviewed one-liner scripts. Use the existing project's approved import/export path and document provenance, revisions, and licenses.
