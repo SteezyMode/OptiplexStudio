@@ -111,13 +111,13 @@ def text_safe(data):
 
 def templates(name, kind='Godot'):
     documents = {'GAME.md': f'# {name}\n\n## Concept and genre\nTo be defined.\n\n## Mechanics\nTo be defined.\n\n## Aesthetic direction\nTo be defined.\n\n## Goals\nTo be defined.\n',
-            'PROGRESS.md': '# Progress\n\n## Implemented\n- Godot project scaffold.\n\n## Current work\n- Define the game concept.\n\n## Next steps\n- Build and playtest a small prototype.\n',
+            'PROGRESS.md': '# Progress\n\n## Implemented\n- Godot project scaffold.\n\n## Current work\n- Define the game concept.\n\n## Validation\n- Not yet tested in the editor.\n\n## Open questions and risks\n- None recorded yet.\n\n## Next actionable step\n- Build and playtest a small prototype.\n',
             'DECISIONS.md': '# Decisions\n\nRecord meaningful technical and design decisions with their reasons.\n',
             'AGENTS.md': '# Project instructions\n\n' + WORKFLOW.replace('PROJECT_NAME', name) + '\n'}
 
     if kind != 'Godot':
         documents['GAME.md'] = f'# {name}\n\n## Project type\n{kind}\n\n## Goals and creative direction\nTo be defined.\n'
-        documents['PROGRESS.md'] = '# Progress\n\n## Implemented\n- Shared project scaffold.\n\n## Current work\n- Define goals.\n\n## Next steps\n- Create an initial draft.\n'
+        documents['PROGRESS.md'] = '# Progress\n\n## Implemented\n- Shared project scaffold.\n\n## Current work\n- Define goals.\n\n## Validation\n- Not yet tested with a creative tool.\n\n## Open questions and risks\n- None recorded yet.\n\n## Next actionable step\n- Create an initial draft.\n'
     return documents
 
 
