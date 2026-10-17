@@ -435,7 +435,8 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
             ('Blender', lambda: self.open_desktop_application('blender'), False),
             ('Krita', lambda: self.open_desktop_application('krita'), False),
         ]:
-            if label not in self.config.get('tray_creative_tools', ['Godot', 'Blender', 'Krita']):
+            enabled = self.config.get('tray_creative_tools', ['Godot', 'Blender', 'Krita'])
+            if not isinstance(enabled, list) or label not in enabled:
                 continue
             item = Gtk.MenuItem(label=label)
             item.connect('activate', lambda _, cb=callback: cb())
