@@ -19,7 +19,7 @@ Status: evaluated candidates, **not installed or enabled**. Each integration is 
 | Blender modeling | [Blender's MCP server](https://www.blender.org/lab/mcp-server/) | Inspect scene and use Blender Python for geometry, materials and export | Check Blender version and plugin dependencies; **high risk** because generated Python has unrestricted effect inside Blender; use only isolated test files and restricted runtime, never give it unrestricted home/server access |
 | Blender alternative | [RFingAdam/mcp-blender](https://github.com/RFingAdam/mcp-blender) | Broader scene/mesh/animation controls; Codex-compatible stdio server | Audit socket interface, file and code-execution tools; compare to official option, install only one |
 | Krita paintover and texture work | [Acly/krita-ai-diffusion](https://github.com/Acly/krita-ai-diffusion) | Inpaint, outpaint, guided textures and image editing | Verify Krita/Flatpak compatibility, model backend and GPU/RAM usage; remote/cloud processing must be an explicit opt-in |
-| Audio and sound design | Existing openDAW/AudioMass | Codex-generated MIDI, event maps, synth parameter briefs and descriptive SFX specs; manually import/export until proven | Round-trip MIDI/WAV in a disposable project, record actual formats, sample rates and naming; no speculative DAW control plugin |
+| Music composition | [LMMS](https://lmms.io/) with optional [lmms-mcp](https://github.com/ZipseLu/lmms-mcp) | Codex-assisted beats, melodic tracks, synth presets, automation, mixer effects and editable native LMMS sessions | Audit this third-party MCP before installation; pin version; restrict project output directory; verify MMP/MMPZ opening and rendering in LMMS on a disposable composition |\n| Sound editing and effects | Existing openDAW/AudioMass | Edit and assemble recorded effects; import reviewed AI-generated MIDI and WAV assets | Test end-to-end WAV import/export, effect processing, naming and game-engine playback |
 | ChatGPT creative generation | Optional Runway connection | Create or revise sound effects, reference images or video, then import chosen files into project | External account, costs/credits, asset licensing, privacy and human review; never automatic uploads |
 
 ## First practical end-to-end pilot
@@ -27,7 +27,7 @@ Status: evaluated candidates, **not installed or enabled**. Each integration is 
 1. Select a **disposable Godot project**, inspect it from Codex and inspect the running Godot scene through a local-only Godot MCP bridge.
 2. Ask Codex to identify a specific scene problem without changing the scene. Capture the exact evidence in `PROGRESS.md`.
 3. Authorize one small scene edit. Preserve a backup/diff, run the project validator and manually confirm the result inside Godot.
-4. Export/import one Blender or Krita asset through existing Studio project files. Verify the asset in Godot and note its source.
+4. In a separate disposable music project, use an LMMS MCP candidate to create a pattern and render a WAV; inspect both the editable source and the exported sound. Export/import one Blender or Krita asset through existing Studio project files. Verify the asset in Godot and note its source.
 5. Resume another Codex session and verify that the project documents, not chat history, are sufficient to recover the objective and status.
 
 ## Not in scope yet
