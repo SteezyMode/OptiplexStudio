@@ -38,7 +38,7 @@ with tarfile.open(fileobj=io.BytesIO(subprocess.check_output(['dpkg-deb', '--fsy
     assert not any('optiplex-now' in p or p.endswith('.svg') for p in files), 'Wrong application/artwork'
 
 modules = ['app.py', 'core.py', 'project_client.py', 'project_helper.py', 'project_ui.py',
-           'desktop_helper.py', 'godot_focus.py', 'file_browser.py', 'session_helper.py', 'session_ui.py', 'style.css']
+           'desktop_helper.py', 'godot_focus.py', 'godot_mcp.py', 'file_browser.py', 'session_helper.py', 'session_ui.py', 'style.css']
 expected = {'usr/bin/optiplex-studio', 'usr/share/doc/optiplex-studio/README.md',
             'usr/share/applications/com.monumentrisk.OptiPlexStudio.desktop'}
 for module in modules:
