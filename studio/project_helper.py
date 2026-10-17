@@ -30,15 +30,24 @@ CATEGORIES = {'Sprites': 'assets/sprites', 'Textures': 'assets/textures',
               'Sound Effects': 'assets/audio/sfx', 'Other Assets': 'assets/other'}
 PROJECT_TYPES = ('Blank', 'Godot', 'Music/Audio', 'Animation', '3D')
 DOCS = ('GAME.md', 'PROGRESS.md', 'DECISIONS.md', 'AGENTS.md')
-WORKFLOW = ('Before significant implementation, read GAME.md, PROGRESS.md, DECISIONS.md and AGENTS.md '
-            'in the project root. Keep PROGRESS.md and DECISIONS.md concise and accurate after meaningful changes. '
-            'Treat GAME.md, PROGRESS.md and DECISIONS.md as the shared handoff for ChatGPT, Codex, Godot, Blender and Krita. '
-            'Record agreed design changes before implementation and update progress after implementation. '
-            'Work only in this project; never change Wolf, server services or unrelated projects. '
-            'Do not commit unless explicitly requested. For Godot projects only, validate Godot changes with the existing '
-            '~/.local/bin/studio-validate PROJECT_NAME when available, replacing PROJECT_NAME with the project name. '
-            'Report missing validation tools or permissions; never bypass them through unrestricted Docker access. '
-            'Headless validation does not replace playtesting.')
+WORKFLOW = (
+    'Before changing a project, read GAME.md, PROGRESS.md, DECISIONS.md and AGENTS.md in its root. '
+    'Treat those files as the durable project handoff shared by Codex, ChatGPT and creative tools; '
+    'a model conversation is not the source of truth. '
+    'Identify the requested outcome and existing work before making changes. '
+    'After meaningful work, update PROGRESS.md with what changed, how it was validated, '
+    'what is still uncertain, and the single next actionable step. '
+    'Record decisions and their tradeoffs in DECISIONS.md; revise GAME.md only when the '
+    'project concept or requirements actually change. '
+    'Do not claim a tool was tested unless it was run. '
+    'Work only inside this project; do not change Wolf, server services, credentials, '
+    'other projects, or shared infrastructure. Do not commit unless explicitly requested. '
+    'For Godot projects only, validate Godot changes with the existing '
+    '~/.local/bin/studio-validate PROJECT_NAME when available, replacing PROJECT_NAME '
+    'with the project name. Report missing validation tools or permissions; '
+    'never bypass them through unrestricted Docker access. '
+    'Headless validation does not replace playtesting.'
+)
 TEXT_TYPES = {'.gd', '.tscn', '.tres', '.godot', '.gdshader', '.gdshaderinc', '.uid',
               '.json', '.csv', '.txt', '.gltf', '.obj', '.mtl', '.md'}
 VISUAL_TYPES = {'.png', '.jpg', '.jpeg', '.webp'}
