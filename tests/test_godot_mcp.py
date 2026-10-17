@@ -3,6 +3,7 @@ import pathlib
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "studio"))
 import godot_mcp
@@ -28,6 +29,24 @@ class GodotMCPTests(unittest.TestCase):
         with self.assertRaises(FileExistsError):
             godot_mcp.enable(self.root, self.tool)
         self.assertEqual(value, target.read_text())
+
+    def test_bridge_check_reports_listener_without_claiming_mcp(self):
+        class FakeSocket:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        with patch("socket.create_connection", return_value=FakeSocket()) as connect:
+            self.assertTrue(godot_mcp.bridge_status())
+            connect.assert_called_once_with(("127.0.0.1", 9080), timeout=1)
+
+    def test_bridge_check_handles_unreachable_listener(self):
+        with patch("socket.create_connection", side_effect=ConnectionRefusedError):
+            self.assertFalse(godot_mcp.bridge_status())
+        with self.assertRaises(ValueError):
+            godot_mcp.bridge_status("0.0.0.0", 9080)
 
     def test_missing_godot_project_fails(self):
         (self.root / "project.godot").unlink()
