@@ -10,6 +10,7 @@ import collections
 import datetime as dt
 import hashlib
 import json
+import struct
 from pathlib import Path
 import urllib.error
 import urllib.request
@@ -22,24 +23,56 @@ def sha256(path):
             h.update(block)
     return h.hexdigest()
 
+def animation_names_from_glb(blob):
+    """Read the JSON chunk of glTF 2.0 GLB without extracting scene geometry."""
+    if len(blob) < 20:
+        raise ValueError("GLB too short")
+    magic, version, length = struct.unpack_from("<4sII", blob)
+    if magic != b"glTF" or version != 2 or length != len(blob):
+        raise ValueError("Invalid glTF 2.0 GLB header")
+    offset = 12
+    while offset + 8 <= len(blob):
+        chunk_length, chunk_type = struct.unpack_from("<II", blob, offset)
+        offset += 8
+        if offset + chunk_length > len(blob):
+            raise ValueError("Invalid GLB chunk length")
+        if chunk_type == 0x4E4F534A:  # JSON
+            data = json.loads(blob[offset:offset + chunk_length].rstrip(b"\\x00 \\t\\r\\n"))
+            return [a.get("name") or "(unnamed)" for a in data.get("animations", [])]
+        offset += chunk_length
+    raise ValueError("No JSON chunk in GLB")
+
 def inventory_zip(path):
     with zipfile.ZipFile(path) as z:
         members=z.infolist()
         counts=collections.Counter(Path(f.filename).suffix.lower() for f in members if not f.is_dir())
         anims=[]
+        errors=[]
+        inspected=[]
         for f in members:
-            if f.is_dir() or Path(f.filename).suffix.lower() != ".gltf" or f.file_size>16*1024*1024:
+            suffix=Path(f.filename).suffix.lower()
+            if f.is_dir() or suffix not in (".gltf", ".glb"):
                 continue
+            if f.file_size > 64*1024*1024:
+                errors.append({"archive_member":f.filename, "error":"skipped above 64 MiB metadata parsing limit"})
+                continue
+            inspected.append(f.filename)
             try:
-                data=json.loads(z.read(f))
-                for a in data.get("animations",[]):
-                    anims.append({"archive_member":f.filename,"name":a.get("name","(unnamed)")})
-            except (ValueError,UnicodeError,OSError,RuntimeError) as exc:
-                anims.append({"archive_member":f.filename,"error":str(exc)})
+                blob=z.read(f)
+                if suffix==".glb":
+                    names=animation_names_from_glb(blob)
+                else:
+                    data=json.loads(blob)
+                    names=[a.get("name") or "(unnamed)" for a in data.get("animations", [])]
+                anims.extend({"archive_member":f.filename,"name":name} for name in names)
+            except (ValueError,UnicodeError,OSError,RuntimeError,struct.error) as exc:
+                errors.append({"archive_member":f.filename,"error":str(exc)})
         likely=[f.filename for f in members if any(k in f.filename.lower() for k in ("walk","zombie","idle","reach","shuffle","limp"))]
         return {"member_count":len(members),"extensions":dict(sorted(counts.items())),
                 "sample_filenames":[f.filename for f in members[:40]],"filename_matches":likely[:100],
-                "gltf_animations":anims[:500], "gltf_animation_count_found":len(anims)}
+                "gltf_animations":anims[:1000], "gltf_animation_count_found":len(anims),
+                "gltf_scene_files_scanned":inspected, "gltf_parse_errors":errors,
+                "note":"Only glTF JSON and GLB animation names inspected. FBX and Blender actions require Blender/FBX inspection."}
 
 def api_json(url):
     req=urllib.request.Request(url, headers={"User-Agent":"OptiPlexStudio-reference-intake/0.1 (+https://github.com/SteezyMode/OptiplexStudio)","Accept":"application/json"})
@@ -108,7 +141,7 @@ def main():
             a=r["archive"]
             lines.append("- ZIP members: "+str(a["member_count"]))
             lines.append("- Extensions: "+json.dumps(a["extensions"]))
-            lines.append("- Embedded glTF animation names found: "+str(a["gltf_animation_count_found"]))
+            lines.append("- Embedded glTF/GLB animation names found: "+str(a["gltf_animation_count_found"]))\n            lines.append("- glTF/GLB files inspected: "+str(len(a.get("gltf_scene_files_scanned", []))))\n            lines.append("- Other animation actions: FBX and .blend not yet parsed")\n            if a.get("gltf_parse_errors"):lines.append("- Parser warnings: "+json.dumps(a["gltf_parse_errors"][:4]))
             matches=(a["filename_matches"][:16]+[x.get("name","") for x in a["gltf_animations"][:16]])
             lines.append("- Likely motion names: "+", ".join(x for x in matches if x) if matches else "- Motions: further FBX/Blender parsing needed")
         if "polyhaven" in r:lines.append("- Poly Haven metadata fetched: yes")
