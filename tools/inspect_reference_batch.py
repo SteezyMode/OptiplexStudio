@@ -141,7 +141,10 @@ def main():
             a=r["archive"]
             lines.append("- ZIP members: "+str(a["member_count"]))
             lines.append("- Extensions: "+json.dumps(a["extensions"]))
-            lines.append("- Embedded glTF/GLB animation names found: "+str(a["gltf_animation_count_found"]))\n            lines.append("- glTF/GLB files inspected: "+str(len(a.get("gltf_scene_files_scanned", []))))\n            lines.append("- Other animation actions: FBX and .blend not yet parsed")\n            if a.get("gltf_parse_errors"):lines.append("- Parser warnings: "+json.dumps(a["gltf_parse_errors"][:4]))
+            lines.append("- Embedded glTF/GLB animation names found: "+str(a["gltf_animation_count_found"]))
+            lines.append("- glTF/GLB files inspected: "+str(len(a.get("gltf_scene_files_scanned", []))))
+            lines.append("- Other animation actions: FBX and .blend not yet parsed")
+            if a.get("gltf_parse_errors"):lines.append("- Parser warnings: "+json.dumps(a["gltf_parse_errors"][:4]))
             matches=(a["filename_matches"][:16]+[x.get("name","") for x in a["gltf_animations"][:16]])
             lines.append("- Likely motion names: "+", ".join(x for x in matches if x) if matches else "- Motions: further FBX/Blender parsing needed")
         if "polyhaven" in r:lines.append("- Poly Haven metadata fetched: yes")
