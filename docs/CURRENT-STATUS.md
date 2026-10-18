@@ -36,6 +36,8 @@ Only milestone **4** is explicitly marked complete in the frozen issue. Keep the
 1. **Frozen Studio v1.0:** finish/replay the six original acceptance gates, especially #5 persistence/off-host backups and #6 the exact new-project two-room acceptance. No seventh v1 milestone is implied.
 2. **Game-production pilot and post-v1 product direction:** user wants a **short, complete 5–10-minute zombie encounter game**, not endless modeling/asset sourcing. The playable V3 hallway prototype is an *early vertical slice*, not that finished game. See [#12](https://github.com/SteezyMode/OptiplexStudio/issues/12). Build a coherent beginning, exploration, one or two scary encounters, interaction, atmosphere/audio, and an ending; keep small human visual review gates.
 
+**Efficient next-game acceptance:** Design the requested 5–10-minute zombie mini-game as a **new Godot project with at least two rooms**, one interactive door, one animated object, music, and a scene transition. That allows the same creative vertical slice to be evaluated against the **original frozen milestone 6**, while adding zombie atmosphere/encounters as optional creative scope. It only counts when all original criteria are actually played and verified; the current one-hallway V3 prototype does not count.
+
 ### Later, only when the above is moving
 - [#13](https://github.com/SteezyMode/OptiplexStudio/issues/13): improve demo discovery and one-click Play/Stop UX without creating a desktop full of one-off shortcuts. Esc/F10 and windowed X11 are solved for tested demos; **no universal GUI Play/Stop yet**.
 - [#9](https://github.com/SteezyMode/OptiplexStudio/issues/9): Godot Project Manager **registration solved** in active Wolf; unified native/Wolf project/test browser still open.
