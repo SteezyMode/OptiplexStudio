@@ -37,7 +37,7 @@ def animation_names_from_glb(blob):
         if offset + chunk_length > len(blob):
             raise ValueError("Invalid GLB chunk length")
         if chunk_type == 0x4E4F534A:  # JSON
-            data = json.loads(blob[offset:offset + chunk_length].rstrip(b"\\x00 \\t\\r\\n"))
+            data = json.loads(blob[offset:offset + chunk_length].rstrip(b"\x00 \t\r\n"))
             return [a.get("name") or "(unnamed)" for a in data.get("animations", [])]
         offset += chunk_length
     raise ValueError("No JSON chunk in GLB")
