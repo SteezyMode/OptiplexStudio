@@ -22,7 +22,7 @@ The opportunity is **not** to resell Godot, Blender, LMMS, Blockbench or Codex w
 | AI assistance | Existing Codex/other provider | Project-scoped worker, approval, logs, bounded tasks, context retrieval |
 | Coordination | Studio-owned core | Canonical manifest, source/derived assets, test results, provenance, human review |
 
-**Long-term capability:** Godot + Blender is the core path for complex rigging, animation and materials. **Near-term sequencing is different:** first prove an end-to-end *playable Godot game workflow*, then use Blockbench for simple static/stylized game props where it reduces friction, and Blender for complex animated assets only where the game requires them. Do **not** prioritize a large model-to-Godot automation project ahead of gameplay, audio, test/build and user playtesting. LMMS can contribute through straightforward music export. Other software is optional adapters, not a requirement of Studio's identity.
+**Confirmed prioritization (2026-10-19):** Godot gameplay and project completion first; Blender is the active 3D modeling/animation companion; Codex orchestrates bounded tasks. LMMS remains important for finishing games but deeper integration is deferred. Blockbench and browser editors are optional, without new integration work unless an observed need emerges. See the confirmed-focus section below. Other software adapters must not become prerequisites for shipping a playable game.
 
 ## Specific interoperability contract
 
@@ -60,7 +60,7 @@ Initial license map (**informational; not legal clearance**):
 1. Finish v1 recovery/reinstall and the specific two-room game acceptance (potentially aligned with the requested short zombie game).
 2. Demonstrate one **Godot ↔ Blender** animation/model roundtrip with consistent scale, skeleton mapping, repeatable export/import, and a visual/human pass — *without manual SSH fixes*.
 3. Repeat on at least one unrelated asset/game style to prove the pipeline is genre-neutral.
-4. Add lightweight Blockbench/LMMS integration through shared project manifests, plugins only when actually needed.
+4. Preserve LMMS audio source/export as part of finished-game production; defer deep LMMS automation, Blockbench plugins, and browser-tool integration until a demonstrated workflow bottleneck warrants them.
 5. Test with an outside developer on supported Linux; record setup time, manual repairs, onboarding questions and willingness to pay.
 6. Evaluate selective forks only if repeated real-world blockers justify them.
 
@@ -69,9 +69,15 @@ Initial license map (**informational; not legal clearance**):
 **Commercial boundary:** OptiPlex is placeholder branding. Rebrand before selling, perform trademark and full distribution license review, and do not promise automated game creation or bundle ongoing expensive AI inference without pricing it.
 
 
-## Implementation emphasis clarified — 2026-10-19
-The Studio user challenged an excessive emphasis on model/export tooling. **Primary product acceptance is making playable games**, including Codex-assisted Godot scene scripting, interactions, project context, testing, preview/exit, and end-to-end completion. Art pipelines support that goal but should not dictate the feature roadmap.
+## Confirmed near-term focus — 2026-10-19
 
-**Recommended small comparison, not a new v1 milestone:** For the upcoming short two-room zombie game, make one simple interactive prop (e.g. door latch/control box) using **Blockbench source → glTF/GLB → Godot**. Use an existing rigged zombie/animation rather than rebuilding a humanoid in Blender. Test predictable units, origin/pivot, materials, collision and a reusable Godot scene; review visually. Compare to a Blender scripted export on the **same limited asset** only if that reveals a real automation or animation limitation. Evaluate which workflow required fewer manual corrections and less developer/AI effort. Keep Blender as the sensible longer-term choice for complex rigged characters and programmatic `bpy` workflows, not necessarily the first stop for every small prop.
+The owner explicitly selected **Godot + Blender + Codex as the active development stack**, focused on completing a short playable zombie game and the frozen Studio v1 acceptance conditions. Do **not** initiate a Blockbench-first comparison or expand browser-tool integrations as a prerequisite.
 
-**Avoid overbuilding:** No new generic asset registry, plugin or file-format fork until this minimal task produces evidence. If Godot-level interactions or run/test UX are the bottleneck, prioritize those over a modeling pipeline. This changes near-term emphasis, not frozen issue #3 scope or the documented long-term multi-tool integration intent.
+- **Godot is the center of game completion:** gameplay scripting, doors/objectives, scenes, triggers, audio playback, playtesting, endings, editor/runtime stability. Headless validation complements but never substitutes for rendered playtests.
+- **Blender is the active 3D companion:** editable source, needed props, rigging, animation, predictable glTF/GLB export into Godot. Prioritize actual game requirements and limited, measurable fixes; do not embark on an unbounded character/model pipeline.
+- **Codex provides project-scoped automation**, with its existing human approval/review workflow.
+- **LMMS is important to a finished game**, especially score, music and atmosphere. Retain it as a meaningful production capability and satisfy audio/music requirements using currently working export/import. **Defer deeper LMMS integration**, not audio production itself.
+- **Blockbench remains optional/deferred.** It may be useful for quick low-poly modeling or as a gentler manual editor, but its incremental value over already-scriptable Blender is not currently established. Revisit only if a concrete Blender workflow proves unnecessarily costly.
+- Existing browser tools remain available but **not active integration priorities**; shortcuts alone aren't proof of a unified production pipeline. No rush to remove functioning tools.
+
+**Minimal next test:** make progress on the existing zombie experience with Godot gameplay and only the Blender assets necessary to support it; preserve current Wolf streaming, demo exit controls and original project data. Revisit tooling only in response to observed bottlenecks. This is a **priority clarification**, not new v1 scope, and supersedes earlier Blockbench-first recommendations.
