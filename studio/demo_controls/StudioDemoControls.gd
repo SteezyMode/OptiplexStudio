@@ -1,4 +1,5 @@
 extends CanvasLayer
+# OptiPlex Studio: managed demo exit controls
 ## OptiPlex Studio's universal exit/pause controls for disposable Godot demos.
 ## Injected only into registered Studio experiment projects, never production games.
 ## F10: always quit. Esc: pause menu. Works with captured mouse input.
