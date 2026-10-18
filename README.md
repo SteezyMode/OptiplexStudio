@@ -23,6 +23,11 @@ The application is independently installable alongside OptiPlex NOW. Building or
 
 Release packages include the approved PNG icons unchanged and a SHA-256 sidecar. The release checks cover 96 automated regressions, isolated native GTK workflows and Debian payload validation. Live Wolf/Godot, Codex resumption and real tray-panel checks are documented separately in the release notes.
 
+## Long-term product architecture
+
+- [ADR-002 — Upstream-first integrated creative toolchain](docs/ADR-002-UPSTREAM-FIRST-INTEGRATED-TOOLCHAIN.md): Godot, Blender, Blockbench and LMMS, adapter-first integration, compatibility matrix and strict fork criteria. **Proposed strategy, not an implemented feature.**
+- [ADR-001 — Shared local-first Studio runtime](docs/ADR-001-LOCAL-FIRST-SHARED-STUDIO-RUNTIME.md): native/remote frontends share the same project and agent state.
+
 ## Active development handoff
 
 - [Milestone 8 — Studio Art Director: curated visual references, 3D asset library and next steps](docs/MILESTONE-8-ART-DIRECTOR-HANDOFF-2026-10-18.md)
