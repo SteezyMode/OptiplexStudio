@@ -1,0 +1,37 @@
+name: Verify Studio demo controls
+
+on:
+  push:
+    paths:
+      - 'studio/demo_controls/**'
+      - 'tools/ensure_studio_demo_controls.py'
+      - 'tools/install_studio_demo_controls.sh'
+      - 'tools/preflight_studio_demo_controls.sh'
+      - 'tests/test_studio_demo_controls.py'
+      - '.github/workflows/studio-demo-controls.yml'
+  pull_request:
+    paths:
+      - 'studio/demo_controls/**'
+      - 'tools/ensure_studio_demo_controls.py'
+      - 'tools/install_studio_demo_controls.sh'
+      - 'tools/preflight_studio_demo_controls.sh'
+      - 'tests/test_studio_demo_controls.py'
+      - '.github/workflows/studio-demo-controls.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python and shell syntax
+        run: |
+          python3 -m py_compile tools/ensure_studio_demo_controls.py tests/test_studio_demo_controls.py
+          bash -n tools/install_studio_demo_controls.sh
+          bash -n tools/preflight_studio_demo_controls.sh
+      - name: Verify non-destructive demo setup
+        run: python3 -m unittest discover -s tests -p 'test_studio_demo_controls.py' -v
