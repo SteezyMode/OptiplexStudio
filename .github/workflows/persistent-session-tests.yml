@@ -1,0 +1,23 @@
+name: Studio persistent session backend tests
+
+on:
+  pull_request:
+    paths:
+      - 'studio/persistent_sessions.py'
+      - 'tests/test_persistent_sessions.py'
+      - '.github/workflows/persistent-session-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile host-side module
+        run: python3 -m py_compile studio/persistent_sessions.py tests/test_persistent_sessions.py
+      - name: Test mocked lifecycle and safety behavior
+        run: python3 -m unittest discover -s tests -p 'test_persistent_sessions.py' -v
