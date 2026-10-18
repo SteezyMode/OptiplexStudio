@@ -1,5 +1,8 @@
 # Milestone 8 handoff — Studio Art Director (2026-10-18)
 
+> **Historical handoff (2026-10-18):** This page describes the original Milestone 8 Art Director investigation, **not** the frozen v1.0 six-milestone release contract or the latest creative direction. Patient V2.2 was subsequently rejected; a V3 animation audition and runnable prototype followed. Continue from [Current Status](CURRENT-STATUS.md) and [issue #12](https://github.com/SteezyMode/OptiplexStudio/issues/12), rather than executing the obsolete "very next command" at the bottom of this dated handoff.
+
+
 ## Purpose and non-negotiable direction
 
 OptiPlex Studio is an AI-assisted, end-to-end game-development workspace using Codex, Godot, Blender, and other specialized tools. **Milestone 8 is a permanent, portable, curated art-direction and asset-production knowledge base**, not a one-off improvement to one zombie. Its purpose is to improve artistic quality across projects, Codex sessions, clean installations, and machines. This is persistent documentation, reusable assets, benchmarks, and human-approved critiques—not neural-network fine-tuning.
