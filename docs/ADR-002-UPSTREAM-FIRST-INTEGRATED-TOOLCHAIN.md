@@ -22,7 +22,7 @@ The opportunity is **not** to resell Godot, Blender, LMMS, Blockbench or Codex w
 | AI assistance | Existing Codex/other provider | Project-scoped worker, approval, logs, bounded tasks, context retrieval |
 | Coordination | Studio-owned core | Canonical manifest, source/derived assets, test results, provenance, human review |
 
-**Priority:** make Godot + Blender dependable *before* deeply extending Blockbench and LMMS. Keep Blockbench as a complementary modeling tool rather than replacing Blender; audio editor interchange need not mean editing LMMS's internals. Other software is optional adapters, not a requirement of Studio's identity.
+**Long-term capability:** Godot + Blender is the core path for complex rigging, animation and materials. **Near-term sequencing is different:** first prove an end-to-end *playable Godot game workflow*, then use Blockbench for simple static/stylized game props where it reduces friction, and Blender for complex animated assets only where the game requires them. Do **not** prioritize a large model-to-Godot automation project ahead of gameplay, audio, test/build and user playtesting. LMMS can contribute through straightforward music export. Other software is optional adapters, not a requirement of Studio's identity.
 
 ## Specific interoperability contract
 
@@ -49,7 +49,7 @@ Fork only after writing down: the exact blocked workflow, why documented APIs/pl
 Initial license map (**informational; not legal clearance**):
 - [Godot](https://github.com/godotengine/godot) MIT.
 - [Blender](https://www.blender.org/about/license/) principally GPL, with other third-party and component terms; distributing a modified executable has obligations.
-- [Blockbench](https://github.com/JannisX11/blockbench) GPL-3.0; its plugin policy/exception must be verified before proprietary distribution.
+- [Blockbench](https://github.com/JannisX11/blockbench) GPL-3.0 for application source. Its [upstream README](https://github.com/JannisX11/blockbench#plugins) explicitly states that external API plugins/themes may be proprietary or paid; redistribution of modified Blockbench itself remains a separate license question.
 - [LMMS](https://github.com/LMMS/lmms) GPL-2.0; individual dependencies/plug-ins may differ.
 - Game models, motions, sounds, fonts, Codex accounts and provider APIs need separate rights review. A game-use license does not automatically allow redistribution of an asset pack within Studio. Do not claim that separate execution automatically guarantees that a proprietary bundle has no copyleft obligations.
 
@@ -67,3 +67,11 @@ Initial license map (**informational; not legal clearance**):
 **Kill criterion:** If users still routinely have to manually troubleshoot imported scale, animation, installed tool versions or experiment launch, calling this a unified Studio product is premature.
 
 **Commercial boundary:** OptiPlex is placeholder branding. Rebrand before selling, perform trademark and full distribution license review, and do not promise automated game creation or bundle ongoing expensive AI inference without pricing it.
+
+
+## Implementation emphasis clarified — 2026-10-19
+The Studio user challenged an excessive emphasis on model/export tooling. **Primary product acceptance is making playable games**, including Codex-assisted Godot scene scripting, interactions, project context, testing, preview/exit, and end-to-end completion. Art pipelines support that goal but should not dictate the feature roadmap.
+
+**Recommended small comparison, not a new v1 milestone:** For the upcoming short two-room zombie game, make one simple interactive prop (e.g. door latch/control box) using **Blockbench source → glTF/GLB → Godot**. Use an existing rigged zombie/animation rather than rebuilding a humanoid in Blender. Test predictable units, origin/pivot, materials, collision and a reusable Godot scene; review visually. Compare to a Blender scripted export on the **same limited asset** only if that reveals a real automation or animation limitation. Evaluate which workflow required fewer manual corrections and less developer/AI effort. Keep Blender as the sensible longer-term choice for complex rigged characters and programmatic `bpy` workflows, not necessarily the first stop for every small prop.
+
+**Avoid overbuilding:** No new generic asset registry, plugin or file-format fork until this minimal task produces evidence. If Godot-level interactions or run/test UX are the bottleneck, prioritize those over a modeling pipeline. This changes near-term emphasis, not frozen issue #3 scope or the documented long-term multi-tool integration intent.
