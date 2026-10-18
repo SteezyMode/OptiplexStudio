@@ -1,5 +1,8 @@
 # OptiPlex Studio
 
+> **Current status (2026-10-19):** The latest **published** Studio package is v0.3.0. Later repository changes and Wolf host-side utilities are not automatically included in that .deb or installed GUI. See [Current status: frozen v1 milestones, verified Wolf improvements, and next work](docs/CURRENT-STATUS.md). Studio v1.0 remains unreleased.
+
+
 **Remote development:** [Persistent SSH/Codex sessions with tmux](docs/remote-development-tmux.md) — survive client disconnects (not host reboots).
 
 Native GTK3 creative workspace for OptiPlex projects, assets, documentation, Codex sessions and Wolf desktop streaming over Tailscale.
