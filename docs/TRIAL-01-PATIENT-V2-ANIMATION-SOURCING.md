@@ -53,3 +53,6 @@ Next step and acceptance gates:
 **After Trial 02:** review corrected shoulders/feet and then pursue hands/face and PBR skin/gown materials, with separate AI-behavior work after locomotion is fit for purpose.
 
 **Reboot note:** workstation froze and rebooted later the same evening; prior tmux process cannot survive reboot. Review saved Codex conversations and files; do not assume a task is still running because an old terminal title exists.
+
+## User correction — hands are a major success in V2 (2026-10-18)
+The user's later direct visual assessment clarifies and supersedes the earlier vague note that hands were "still not stellar": **V2's hands are dramatically better than V1's, arguably the biggest single model improvement.** Hands may eventually receive targeted polish, but they are **not** a top-priority problem and must not be regenerated or substantially altered during V2.1. Preserve V2 hand geometry, pose and skinning when repairing shoulder and foot rig/animation issues. Current primary defects: high/shrugged shoulders in retargeted Zombie_Walk_Fwd_Loop and badly distorted feet; overall gait improved but remains imperfect. Grade improvements relative to the V2 baseline, not V1.
