@@ -16,6 +16,8 @@ if ! systemctl cat optiplex-studio-godot-sync.service >/dev/null 2>&1; then
     exit 1
 fi
 
+bash "$here/preflight_studio_demo_controls.sh"
+
 sudo install -Dm644 "$here/../studio/demo_controls/StudioDemoControls.gd" \
     /usr/local/share/optiplex-studio/StudioDemoControls.gd
 sudo install -Dm755 "$here/ensure_studio_demo_controls.py" \
