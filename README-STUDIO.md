@@ -1,5 +1,8 @@
 # OptiPlex Studio 0.3.0
 
+> **Release-scope note (2026-10-19):** This document describes the **published v0.3.0 native GTK client**, not all later server-side Studio experiments or an already-installed GTK upgrade. For the latest actual host verification, frozen Studio v1 status and V3 zombie prototype, see [Current Status](docs/CURRENT-STATUS.md). Godot's Esc/F10 shared demo controls and Wolf XFCE X11 window fix were introduced after v0.3.0; they are not claims about the packaged application's built-in Play/Stop UI.
+
+
 Independent native GTK3 project workspace, with a compiled C launcher and
 PyGObject interface. The NOW reference source, build files, installed application,
 and original artwork are unchanged. The approved Studio application and tray
