@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "batch_id": "threshold-patient-reference-batch-01",
+  "created_on": "2026-10-18",
+  "purpose": "Reference-first Patient V2 improvement and reusable Studio game-asset sourcing; staged only, never auto-import.",
+  "preservation": [
+    "Threshold V1 scenes/assets",
+    "Patient V2 r06 review source",
+    "working gameplay test",
+    "Wolf and other server services"
+  ],
+  "source_rules": "Candidate sources and catalog metadata are not approval to import, publish, modify production files, or redownload paid content. Record each exact archive license and SHA256.",
+  "entries": [
+    {
+      "id": "ual2-standard-oga",
+      "category": "animation",
+      "title": "Quaternius Universal Animation Library 2 Standard (creator OpenGameArt Jan 2026 edition)",
+      "source_url": "https://opengameart.org/content/universal-animation-library-2",
+      "download_url": "https://opengameart.org/sites/default/files/universal_animation_library_2standard.zip",
+      "license_url": "https://opengameart.org/content/universal-animation-library-2",
+      "license": "CC0 (source page)",
+      "status": "downloaded",
+      "local_file": "incoming/quaternius-ual2-standard.zip",
+      "expected_sha256": "ec0e40d6d78fe9aaad59e322f40865a8675c22f0745e291622e54520391a9217",
+      "notes": "Downloaded and ZIP-tested 2026-10-18; inventory actual included clips. Older than June root-motion revisions."
+    },
+    {
+      "id": "ual2-current",
+      "category": "animation",
+      "title": "Quaternius Universal Animation Library 2 Standard v2.1+ current",
+      "source_url": "https://quaternius.itch.io/universal-animation-library-2",
+      "license_url": "https://quaternius.itch.io/universal-animation-library-2",
+      "license": "CC0 (pack page)",
+      "status": "candidate",
+      "notes": "Current free Standard pack 17 MB, June/July 2026 root-motion and Godot naming updates. Download through official itch page if old archive lacks needed clips; no direct URL asserted."
+    },
+    {
+      "id": "quaternius-animated-zombie",
+      "category": "zombie-reference",
+      "title": "Quaternius Animated Zombie Pack",
+      "source_url": "https://quaternius.com/packs/animatedzombie.html",
+      "license_url": "https://quaternius.com/packs/animatedzombie.html",
+      "license": "CC0 (pack page)",
+      "status": "candidate",
+      "notes": "Atlas textured zombie with animations, FBX/OBJ/Blend; stylized reference only unless explicitly approved for aesthetic use."
+    },
+    {
+      "id": "quaternius-zombie-apocalypse",
+      "category": "zombie-reference",
+      "title": "Quaternius Zombie Apocalypse Kit",
+      "source_url": "https://quaternius.com/packs/zombieapocalypsekit.html",
+      "license_url": "https://quaternius.com/packs/zombieapocalypsekit.html",
+      "license": "CC0 (pack page)",
+      "status": "candidate",
+      "notes": "Characters, enemies, animations, environment and vehicle props, FBX/OBJ/glTF/Blend; stylized, good skeleton/prop/candidate reference."
+    },
+    {
+      "id": "mpfb",
+      "category": "anatomy-and-modeling",
+      "title": "MakeHuman MPFB Blender add-on 2.0.18",
+      "source_url": "https://extensions.blender.org/add-ons/mpfb/",
+      "license_url": "https://static.makehumancommunity.org/about/license.html",
+      "license": "Add-on GPL-3+; core bundled graphical assets CC0; separately acquired assets may differ",
+      "status": "candidate",
+      "notes": "Compatible Blender 4.2+, reference Blender version is 5.2. Parametric anatomy, hand/face, skin, clothing, rigs. Do not install into live Wolf without safe persistence and version checks."
+    },
+    {
+      "id": "blender-human-base",
+      "category": "anatomy-and-modeling",
+      "title": "Blender Studio Human Base Meshes v1.4.1",
+      "source_url": "https://studio.blender.org/",
+      "license_url": "https://studio.blender.org/",
+      "license": "Mixed: bundle has embedded Rain Rig notice; inspect exact files",
+      "status": "already-staged",
+      "local_file": "incoming/human-base-meshes-v1.4.1.zip",
+      "notes": "Existing vetted staging ZIP. Do not assume blanket CC0 or embed Rain Rig."
+    },
+    {
+      "id": "ph-fabric-pattern-05",
+      "category": "cloth-material",
+      "title": "Poly Haven Fabric Pattern 05",
+      "source_url": "https://polyhaven.com/a/fabric_pattern_05",
+      "license_url": "https://polyhaven.com/license",
+      "license": "CC0",
+      "polyhaven_id": "fabric_pattern_05",
+      "status": "candidate",
+      "notes": "Fine woven cloth pattern for weave/normal/roughness testing; its plaid diffuse is NOT automatically suitable for a hospital gown; tint/material experiment."
+    },
+    {
+      "id": "ph-terry-cloth",
+      "category": "cloth-material",
+      "title": "Poly Haven Terry Cloth",
+      "source_url": "https://polyhaven.com/a/terry_cloth",
+      "license_url": "https://polyhaven.com/license",
+      "license": "CC0",
+      "polyhaven_id": "terry_cloth",
+      "status": "candidate",
+      "notes": "Towel texture; use as textile-study comparator, not literal gown without review."
+    },
+    {
+      "id": "ph-white-tiles",
+      "category": "environment-material",
+      "title": "Poly Haven Long White Tiles",
+      "source_url": "https://polyhaven.com/a/long_white_tiles",
+      "license_url": "https://polyhaven.com/license",
+      "license": "CC0",
+      "polyhaven_id": "long_white_tiles",
+      "status": "candidate",
+      "notes": "Hospital wall/floor material prospect; test UVs, tile size and gameplay readability."
+    },
+    {
+      "id": "ph-hospital-room-2",
+      "category": "lighting-reference",
+      "title": "Poly Haven Hospital Room 2 HDRI",
+      "source_url": "https://polyhaven.com/a/hospital_room_2",
+      "license_url": "https://polyhaven.com/license",
+      "license": "CC0",
+      "polyhaven_id": "hospital_room_2",
+      "status": "candidate",
+      "notes": "Lighting/visual reference HDRI, NOT an editable hospital scene or prop kit; select small resolution."
+    },
+    {
+      "id": "ph-vintage-crutches",
+      "category": "hospital-prop",
+      "title": "Poly Haven Vintage Crutches 01",
+      "source_url": "https://polyhaven.com/a/vintage_crutches_01",
+      "license_url": "https://polyhaven.com/license",
+      "license": "CC0",
+      "polyhaven_id": "vintage_crutches_01",
+      "status": "candidate",
+      "notes": "Candidate prop, possibly anachronistic for Threshold; require artistic approval and Godot LOD/tri budget."
+    }
+  ]
+}
