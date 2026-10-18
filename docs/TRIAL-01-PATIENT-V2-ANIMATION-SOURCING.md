@@ -23,3 +23,15 @@ Rate visual fit, rig compatibility, import complexity, runtime performance, foot
 
 ## Next action
 When the existing V2 Godot integration Codex task finishes, inspect its test scene and report. Obtain explicit approval for free Quaternius UAL2 Standard pack and selected motion style. Then issue a scoped Codex task, not a free-form redo.
+
+## First in-engine human review — 2026-10-18
+User launched `res://scenes/tests/patient_v2_test.tscn` in Threshold via the existing Wolf desktop and directly observed V1 beside V2. Findings: **V2 looks dramatically better than V1 visually**; hands are still not convincing; animation is stiff; character/enemy logic and movement behavior did not materially improve. These are qualitative human observations, not new automated test results.
+
+Interpretation: V2 was deliberately deployed with the unchanged V1 AI/controller and TEMP_idle / TEMP_walk / TEMP_reach diagnostic cycles. The lack of improved behavior/animation is expected, not evidence that the rig or model pipeline failed. Keep the V2 review source and V1 unchanged; V2 is a **visual baseline**, not a production-approved model.
+
+Next step and acceptance gates:
+1. Test ONE externally sourced humanoid motion set (prefer Quaternius UAL2 Standard, after verifying exact package contents and license). First obtain user approval for actual download/import if not already granted.
+2. Preview and retarget ONE suitable compromised/zombie walk to the V2 44-bone skeleton in a reversible test copy. Check hand/wrist orientation, foot sliding, hips/root travel, skin and gown contact.
+3. Compare human-review video/screen captures against the TEMP_walk baseline before spending credits on further tweaks. Cap this first pass at one sourcing/import/retarget test; stop and report failures instead of recursive autonomous remodeling.
+4. Make a separate AI-behavior brief **after** locomotion quality is evaluated; do not blend the two experiments.
+5. Track elapsed Codex work and revision count so the Studio creative-direction pilot has cost/quality evidence.
