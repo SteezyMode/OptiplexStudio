@@ -1,0 +1,26 @@
+name: Verify Wolf Godot project registration
+
+on:
+  pull_request:
+    paths:
+      - 'tools/sync_wolf_godot_projects.py'
+      - 'tools/install_wolf_godot_sync.sh'
+      - 'tests/test_sync_wolf_godot_projects.py'
+      - '.github/workflows/wolf-godot-registration.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python and installer syntax
+        run: |
+          python3 -m py_compile tools/sync_wolf_godot_projects.py tests/test_sync_wolf_godot_projects.py
+          bash -n tools/install_wolf_godot_sync.sh
+      - name: Test project discovery and registry reconciliation
+        run: python3 -m unittest discover -s tests -p 'test_sync_wolf_godot_projects.py' -v
