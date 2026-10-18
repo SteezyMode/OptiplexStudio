@@ -31,3 +31,17 @@ Run three diverse trials: (1) Patient V2 movement, (2) hospital environment + so
 
 ## Future GUI
 Merge with Wolf AI Workspace repair rather than build a disconnected application. Normal non-fullscreen window; project selector; reference board; sourcing candidate cards; explicit approvals; Codex sessions; live job status; review queue. ChatGPT conversations are not automatically available to Codex or API apps: shared files are the source of truth; API-based chat requires separate evaluation and billing decisions.
+
+## Core product rule — original creation is first-class (2026-10-18)
+**Do not turn Studio into a fixed-asset picker.** External asset catalogs are sources of inspiration, reference, technical baselines, textures, licenses, and reusable components. Their existence does not dictate the final creative outcome. The Creative Director must support three peer production modes:
+- **Discover/reuse:** Select an approved model, animation, texture, tool, code pattern or other resource when it already suits the brief.
+- **Transform/remix:** Produce *original derivative/adapted work where licensing permits*, with Blender/Godot/Blockbench/Krita/audio tool support: custom sculpt and proportions, deformation/topology repair, original clothing, UV/materials, textures, retargeted/edited movement, audio and game logic. Preserve provenance of imported parts, avoid confusing a derivation with scratch authorship.
+- **Create from scratch:** Generate new procedural geometry, Blender meshes, materials, rigging/animation, environments, software systems and design implementations from an approved creative brief, references and original ideas. Do not limit UI controls to searching asset catalogs.
+
+These modes should be freely combinable within a task, with the choice based on artistic specificity, quality, rights, runtime cost, human review, and reusability. When sourcing fails or the design is unique, facilitate original production; when an excellent technical base exists, avoid unnecessary low-quality reinvention. The user authors the desired experience and explicitly approves references, transformations and final output.
+
+Example: Threshold patient is not a Quaternius zombie selected from a list. Use human anatomy resources for hands/face, a licensed rig/animation pack for motion starting points, procedural art for distinctive disfigurement and skin/gown textures, and original Godot AI state/behavior logic. Evaluate as an integrated playable character.
+
+**Reference inventory ≠ skills training or completion**: a source catalog does not teach Codex to sculpt or import; build tested tool recipes, reference-to-production briefs, before/after visuals, quality gates, and project-specific design notes. Improving future output means accumulating reliable workflows and retrieval context; do not claim live fine-tuning of model weights.
+
+**Inventory correctness note**: the initial ZIP inspector extracts animation names only from literal `.gltf` JSON members. Quaternius UAL2 ZIP currently has `.glb`, `.fbx` and `.blend`, so its `0 glTF animations` result does **not** mean that the pack has no animations. Inspect `.glb` glTF animation chunks and FBX/Blend actions before assessing available clips.
