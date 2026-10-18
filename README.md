@@ -1,5 +1,7 @@
 # OptiPlex Studio
 
+**Remote development:** [Persistent SSH/Codex sessions with tmux](docs/remote-development-tmux.md) — survive client disconnects (not host reboots).
+
 Native GTK3 creative workspace for OptiPlex projects, assets, documentation, Codex sessions and Wolf desktop streaming over Tailscale.
 
 - [Download OptiPlex Studio 0.3.0](https://github.com/SteezyMode/OptiplexStudio/releases/tag/v0.3.0)
