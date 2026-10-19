@@ -7,6 +7,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, Gio, GLib
 import core
+import tool_catalog
 import project_client
 from session_ui import SessionUI
 from project_ui import ProjectUI, remembered_project, remember_project
@@ -56,6 +57,47 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
         b.set_name(name)
         b.connect('clicked', callback)
         return b
+
+    def tool_section(self, parent, group):
+        """Render a capability group; pending adapters never appear clickable."""
+        frame = Gtk.Frame()
+        frame.set_shadow_type(Gtk.ShadowType.NONE)
+        frame.set_name('tool-group')
+        inner = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8, border_width=12)
+        frame.add(inner)
+        heading = self.label(group['title'], 'tool-heading')
+        inner.pack_start(heading, False, False, 0)
+        inner.pack_start(self.label(group['description'], 'tool-description'), False, False, 0)
+        entries = Gtk.Grid(column_homogeneous=True, column_spacing=10, row_spacing=10)
+        handlers = {
+            'desktop': (self.open_studio_desktop, None),
+            'moonlight': (self.open_moonlight, None),
+            'godot': (lambda _: self.action('edit'), 'godot'),
+            'blender': (lambda _: self.open_desktop_application('blender'), None),
+            'krita': (lambda _: self.open_desktop_application('krita'), None),
+        }
+        for index, (name, action, detail, state) in enumerate(group['tools']):
+            tile = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+            tile.set_name('tool-card' if state == 'ready' else 'tool-candidate')
+            if state == 'ready':
+                handler, prerequisite = handlers[action]
+                caption = 'Open Studio Desktop' if action == 'desktop' else name
+                button = self.button(caption, handler, 'tool-action')
+                if action == 'desktop':
+                    self.desktop_button = button
+                if prerequisite == 'godot':
+                    self.godot_buttons.append(button)
+                else:
+                    self.connection_buttons.append(button)
+                button.set_sensitive(False)
+                tile.pack_start(button, False, False, 0)
+            else:
+                tile.pack_start(self.label(name, 'tool-candidate-name'), False, False, 0)
+                tile.pack_start(self.label('UNDER EVALUATION', 'tool-pending'), False, False, 0)
+            tile.pack_start(self.label(detail, 'tool-description'), False, False, 0)
+            entries.attach(tile, index % 2, index // 2, 1, 1)
+        inner.pack_start(entries, False, False, 0)
+        parent.pack_start(frame, False, False, 0)
 
     def do_activate(self):
         if self.window:
@@ -126,7 +168,7 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
             ('Project Files', self.browse_project, 'project'), ('Import Assets', self.import_assets, 'project'),
             ('Browse Assets', self.browse_assets, 'project'), ('Project Documents', self.documents, 'project'),
             ('Share Project Context', self.share_context, 'project')])
-        project_page.pack_start(self.label('Shared assets, notes and Git history. Browser tools download locally; use Import Assets to transfer their exports into this project.', 'helper'), False, False, 0)
+        project_page.pack_start(self.label('Shared assets, notes and Git history. Import local artwork, music and models into the selected project.', 'helper'), False, False, 0)
         ai_page = page('AI Workspace')
         grid(ai_page, [
             ('New Codex Session', lambda _: self.action('code'), 'project'),
@@ -138,16 +180,10 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
              'godot' if name in ('Fix Godot Errors', 'Validate Project') else 'project') for name in core.CODEX_TASKS])
         ai_page.pack_start(self.label('Codex uses the active project directory and AGENTS.md. Export and review Project Context, then attach it to ChatGPT manually.', 'helper'), False, False, 0)
         tools = page('Creative Tools')
-        self.desktop_button = self.button('Open Studio Desktop', self.open_studio_desktop, 'power')
-        tools.pack_start(self.desktop_button, False, False, 0)
-        self.connection_buttons.append(self.desktop_button)
-        grid(tools, [('Godot', lambda _: self.action('edit'), 'godot'),
-                     ('Blender', lambda _: self.open_desktop_application('blender'), None),
-                     ('Krita', lambda _: self.open_desktop_application('krita'), None),
-                     ('ChatGPT in Wolf', lambda _: self.open_desktop_application('chatgpt'), None),
-                     ('Moonlight', self.open_moonlight, None)] + [
-                     (name, lambda _, n=name, u=url: self.creative_tool(n, u), None) for name, url in core.APPS])
-        tools.pack_start(self.label('Desktop applications use the existing Wolf session. Godot opens or focuses the selected Godot project. Blender and Krita can also launch independently.', 'helper'), False, False, 0)
+        tools.pack_start(self.label('NATIVE CREATIVE WORKSPACE', 'tool-page-title'), False, False, 0)
+        tools.pack_start(self.label('Choose what you want to create. Working desktop actions are clickable; proposed editors are shown without fake launch buttons.', 'tool-description'), False, False, 2)
+        for group in tool_catalog.TOOL_GROUPS:
+            self.tool_section(tools, group)
         self.transfer_progress = Gtk.ProgressBar(show_text=True)
         self.transfer_progress.set_text('Project transfers use Tailscale SSH')
         body.pack_start(self.transfer_progress, False, False, 0)
