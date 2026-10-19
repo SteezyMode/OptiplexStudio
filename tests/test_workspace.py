@@ -192,6 +192,7 @@ class Packaging(unittest.TestCase):
             (fixture/'studio').mkdir()
             (fixture/'assets').mkdir()
             shutil.copy2(root/'studio/package.py', fixture/'studio/package.py')
+            shutil.copy2(root/'studio/version.py', fixture/'studio/version.py')
             icon=root/'assets/optiplex-studio.png'
             if icon.exists():
                 shutil.copy2(icon,fixture/'assets/optiplex-studio.png')
@@ -212,6 +213,7 @@ class Packaging(unittest.TestCase):
             (fixture/'studio').mkdir()
             (fixture/'assets').mkdir()
             shutil.copy2(root/'studio/package.py',fixture/'studio/package.py')
+            shutil.copy2(root/'studio/version.py',fixture/'studio/version.py')
             (fixture/'assets/optiplex-studio.png').write_bytes(icon.read_bytes()[:24])
             result=subprocess.run(['/usr/bin/python3','-B',str(fixture/'studio/package.py')],capture_output=True,text=True)
             self.assertNotEqual(result.returncode,0)
