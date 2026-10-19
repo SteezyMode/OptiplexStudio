@@ -27,7 +27,8 @@ class NativeToolsContract(unittest.TestCase):
         for legacy in ("ultrabox", "audiomass", "opendaw", "piskel", "onionskyn", "cozyclay", "blockbench"):
             self.assertNotIn(legacy, names)
         self.assertNotIn("core.APPS", (ROOT / "studio/app.py").read_text())
-        self.assertNotIn("APPS = [('UltraBox'", (ROOT / "studio/core.py").read_text())
+        self.assertIn("APPS = [('UltraBox'", (ROOT / "studio/core.py").read_text())
+        self.assertIn("TUNNEL_APPS", (ROOT / "studio/core.py").read_text())
 
 
 if __name__ == "__main__":
