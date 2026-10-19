@@ -1,5 +1,9 @@
 # OptiPlex Studio
 
+[![Build, package and GUI verification](https://github.com/SteezyMode/OptiplexStudio/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/SteezyMode/OptiplexStudio/actions/workflows/ci.yml)
+**Automated health checks:** Pull requests, changes to main and a weekly Monday 03:47 UTC run compile, package, and exercise the installed native GTK app on disposable Ubuntu runners. These checks never publish a release or modify the reference server; live Wolf/streaming functionality still needs separate acceptance.
+
+
 > **Current status (2026-10-19):** The latest **published** Studio package is v0.3.0. Later repository changes and Wolf host-side utilities are not automatically included in that .deb or installed GUI. See [Current status: frozen v1 milestones, verified Wolf improvements, and next work](docs/CURRENT-STATUS.md). Studio v1.0 remains unreleased.
 
 
