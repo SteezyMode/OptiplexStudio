@@ -17,10 +17,12 @@ Output: `dist/optiplex-studio_0.3.0_amd64.deb` on amd64. The package is independ
 installable alongside NOW; building it does not install it. Build requires GCC,
 make, Python 3 and dpkg-deb. Runtime dependencies are declared in the package.
 
-Before packaging, place the approved square PNGs at exactly:
+For packaging, use the approved square PNGs already committed at these repository-relative paths:
 
-- `/home/optiplex/StudioProjects/optiplex-studio/assets/optiplex-studio.png`
-- `/home/optiplex/StudioProjects/optiplex-studio/assets/optiplex-studio-tray.png`
+- `assets/optiplex-studio.png`
+- `assets/optiplex-studio-tray.png`
+
+The package script reads these files relative to the checkout; packaging does not require `/home/optiplex/StudioProjects` or Wolf.
 
 The builder validates their PNG headers and dimensions, copies them unchanged
 into the matching hicolor size directories and the standard pixmaps fallback
@@ -29,8 +31,8 @@ if either is missing or cannot be decoded. No artwork is resized or regenerated.
 Both approved PNGs are included in the release source. No old SVGs are used.
 Validate a built artifact with `/usr/bin/python3 studio/validate_package.py`.
 Run isolated native GUI checks with `/usr/bin/python3 tests/run_gtk.py`.
-The release workflow builds and validates the package before publishing its
-Debian artifact and SHA-256 checksum to the v0.3.0 GitHub release.
+Validation CI builds and checks ordinary changes without publishing.
+A separate tag-only workflow publishes new versions after checking the package matches its version tag. Existing published assets are not overwritten.
 
 App ID: `com.monumentrisk.OptiPlexStudio`. Settings remain in
 `$XDG_CONFIG_HOME/optiplex-studio/config.json`, defaulting to
