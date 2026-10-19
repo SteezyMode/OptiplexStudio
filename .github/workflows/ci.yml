@@ -19,7 +19,7 @@ jobs:
       - name: Install build and GUI test dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential python3 python3-gi python3-cairo python3-gi-cairo gir1.2-gtk-3.0 libgtk-3-bin dbus-x11 desktop-file-utils binutils gvfs-backends gvfs-fuse
+          sudo apt-get install -y build-essential python3 python3-gi python3-cairo python3-gi-cairo gir1.2-gtk-3.0 libgtk-3-bin dbus-x11 desktop-file-utils binutils gvfs-backends gvfs-fuse xvfb xauth x11-utils
       - name: Build, run regressions, exercise GUI and validate package
         shell: bash
         run: |
@@ -32,3 +32,4 @@ jobs:
           test "$(dpkg-deb -f "$package" Package)" = "optiplex-studio"
           /usr/bin/python3 -B tests/run_gtk.py --package "$package"
           /usr/bin/python3 -B studio/validate_package.py "$package"
+          bash tests/smoke_installed_package.sh
