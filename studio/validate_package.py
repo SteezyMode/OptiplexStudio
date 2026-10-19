@@ -9,14 +9,15 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+from version import PACKAGE_VERSION
 
 root = Path(__file__).resolve().parents[1]
-package = Path(sys.argv[1]) if len(sys.argv) > 1 else root / 'dist/optiplex-studio_0.3.0_amd64.deb'
+package = Path(sys.argv[1]) if len(sys.argv) > 1 else root / f'dist/optiplex-studio_{PACKAGE_VERSION}_amd64.deb'
 
 def field(name):
     return subprocess.check_output(['dpkg-deb', '--field', str(package), name], text=True).strip()
 
-for name, expected in {'Package': 'optiplex-studio', 'Version': '0.3.0', 'Architecture': 'amd64'}.items():
+for name, expected in {'Package': 'optiplex-studio', 'Version': PACKAGE_VERSION, 'Architecture': 'amd64'}.items():
     assert field(name) == expected, (name, field(name))
 dependencies = field('Depends')
 for name in ('libc6', 'python3', 'python3-gi', 'gir1.2-gtk-3.0', 'openssh-client', 'gvfs-backends', 'gvfs-fuse', 'x-terminal-emulator', 'ca-certificates'):
