@@ -9,6 +9,7 @@ Native GTK3 creative workspace for projects, assets, documentation, and Codex-as
 
 - [Download OptiPlex Studio 0.3.0](https://github.com/SteezyMode/OptiplexStudio/releases/tag/v0.3.0)
 - [New contributor guide and code map](CONTRIBUTING.md)
+- [Documentation index: current status, architecture and experimental notes](docs/README.md)
 - [Build, configuration and workflow documentation](README-STUDIO.md)
 - [0.3.0 release notes and testing limits](RELEASE-0.3.0.md)
 
@@ -22,13 +23,13 @@ make -f Makefile.studio package
 
 The application is independently installable alongside OptiPlex NOW. Building or publishing it does not install it or change Wolf/server services. Browser tools use explicit export/import workflows; ChatGPT snapshots require manual attachment.
 
-Release packages include the approved PNG icons unchanged and a SHA-256 sidecar. The release checks cover 96 automated regressions, isolated native GTK workflows and Debian payload validation. Live Wolf/Godot, Codex resumption and real tray-panel checks are documented separately in the release notes.
+Release packages include the approved PNG icons unchanged and a SHA-256 sidecar. Release checks run automated regressions, isolated native GTK workflows and Debian payload validation; the exact test count changes as coverage grows. Live Wolf/Godot, Codex resumption and real tray-panel checks are documented separately in the release notes.
 
 ## Long-term product architecture
 
 - [ADR-002 — Upstream-first integrated creative toolchain](docs/ADR-002-UPSTREAM-FIRST-INTEGRATED-TOOLCHAIN.md): Godot, Blender, Blockbench and LMMS, adapter-first integration, compatibility matrix and strict fork criteria. **Proposed strategy, not an implemented feature.**
 - [ADR-001 — Shared local-first Studio runtime](docs/ADR-001-LOCAL-FIRST-SHARED-STUDIO-RUNTIME.md): native/remote frontends share the same project and agent state.
 
-## Active development handoff
+## Development references
 
-- [Art Director experimental handoff (not a seventh frozen v1 milestone)](docs/MILESTONE-8-ART-DIRECTOR-HANDOFF-2026-10-18.md)
+The [documentation index](docs/README.md) distinguishes the frozen six-milestone acceptance contract from Art Director and other experimental research. See [current status](docs/CURRENT-STATUS.md) for actual verified progress rather than treating experiment titles as release milestones.
