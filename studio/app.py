@@ -76,24 +76,20 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
             'blender': (lambda _: self.open_desktop_application('blender'), None),
             'krita': (lambda _: self.open_desktop_application('krita'), None),
         }
-        for index, (name, action, detail, state) in enumerate(group['tools']):
+        for index, (name, action, detail) in enumerate(group['tools']):
+            handler, prerequisite = handlers[action]
             tile = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
-            tile.set_name('tool-card' if state == 'ready' else 'tool-candidate')
-            if state == 'ready':
-                handler, prerequisite = handlers[action]
-                caption = 'Open Studio Desktop' if action == 'desktop' else name
-                button = self.button(caption, handler, 'tool-action')
-                if action == 'desktop':
-                    self.desktop_button = button
-                if prerequisite == 'godot':
-                    self.godot_buttons.append(button)
-                else:
-                    self.connection_buttons.append(button)
-                button.set_sensitive(False)
-                tile.pack_start(button, False, False, 0)
+            tile.set_name('tool-card')
+            caption = 'Open Studio Desktop' if action == 'desktop' else name
+            button = self.button(caption, handler, 'tool-action')
+            if action == 'desktop':
+                self.desktop_button = button
+            if prerequisite == 'godot':
+                self.godot_buttons.append(button)
             else:
-                tile.pack_start(self.label(name, 'tool-candidate-name'), False, False, 0)
-                tile.pack_start(self.label('UNDER EVALUATION', 'tool-pending'), False, False, 0)
+                self.connection_buttons.append(button)
+            button.set_sensitive(False)
+            tile.pack_start(button, False, False, 0)
             tile.pack_start(self.label(detail, 'tool-description'), False, False, 0)
             entries.attach(tile, index % 2, index // 2, 1, 1)
         inner.pack_start(entries, False, False, 0)
@@ -181,7 +177,7 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
         ai_page.pack_start(self.label('Codex uses the active project directory and AGENTS.md. Export and review Project Context, then attach it to ChatGPT manually.', 'helper'), False, False, 0)
         tools = page('Creative Tools')
         tools.pack_start(self.label('NATIVE CREATIVE WORKSPACE', 'tool-page-title'), False, False, 0)
-        tools.pack_start(self.label('Choose what you want to create. Working desktop actions are clickable; proposed editors are shown without fake launch buttons.', 'tool-description'), False, False, 2)
+        tools.pack_start(self.label('Native tools only. Each action opens an existing desktop application; additional editors are evaluated separately.', 'tool-description'), False, False, 2)
         for group in tool_catalog.TOOL_GROUPS:
             self.tool_section(tools, group)
         self.transfer_progress = Gtk.ProgressBar(show_text=True)
