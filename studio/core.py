@@ -16,8 +16,16 @@ import atexit
 import time
 
 API = 'https://studio.monumentrisk.com/api/projects'
-# Historical personal browser services are not part of Studio's creative tool catalog.
-# Keep their existing transport paths for compatibility; no shortcut is exposed.
+# Legacy personal browser routes stay for backward compatibility and internal tests.
+# Studio's native Creative Tools screen never uses this list. Do not delete
+# functioning personal hosts, browser URLs or local tunnel safeguards.
+APPS = [('UltraBox', 'https://synth.monumentrisk.com'),
+        ('AudioMass', 'https://recorder.monumentrisk.com'),
+        ('openDAW', 'https://daw.monumentrisk.com'),
+        ('Piskel', 'https://pixel.monumentrisk.com'),
+        ('Onionskyn', 'https://animate.monumentrisk.com'),
+        ('CozyClay', 'https://previs.monumentrisk.com/app/'),
+        ('Blockbench', 'https://models.monumentrisk.com')]
 # Broken HTTPS virtual hosts are replaced by encrypted SSH forwarding to the
 # existing static services, never by disabling TLS or opening public ports.
 TUNNEL_APPS = {'https://animate.monumentrisk.com': (18771, 28771, '/'),
