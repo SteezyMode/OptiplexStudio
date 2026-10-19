@@ -25,7 +25,7 @@ make -f Makefile.studio package
 /usr/bin/python3 studio/validate_package.py
 ```
 
-The application is independently installable alongside OptiPlex NOW. Building or publishing it does not install it or change Wolf/server services. Browser tools use explicit export/import workflows; ChatGPT snapshots require manual attachment.
+The application is independently installable alongside OptiPlex NOW. Building or publishing it does not install it or change Wolf/server services. **Creative Tools now shows only existing native/streaming launch actions**, grouped by purpose. Former hosted browser editors are no longer offered from that screen; their services, files and existing host setup are untouched. ChatGPT snapshots still require manual attachment.
 
 Release packages include the approved PNG icons unchanged and a SHA-256 sidecar. Release checks run automated regressions, isolated native GTK workflows and Debian payload validation; the exact test count changes as coverage grows. Live Wolf/Godot, Codex resumption and real tray-panel checks are documented separately in the release notes.
 
