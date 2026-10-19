@@ -78,6 +78,21 @@ The owner explicitly selected **Godot + Blender + Codex as the active developmen
 - **Codex provides project-scoped automation**, with its existing human approval/review workflow.
 - **LMMS is important to a finished game**, especially score, music and atmosphere. Retain it as a meaningful production capability and satisfy audio/music requirements using currently working export/import. **Defer deeper LMMS integration**, not audio production itself.
 - **Blockbench remains optional/deferred.** It may be useful for quick low-poly modeling or as a gentler manual editor, but its incremental value over already-scriptable Blender is not currently established. Revisit only if a concrete Blender workflow proves unnecessarily costly.
-- Existing browser tools remain available but **not active integration priorities**; shortcuts alone aren't proof of a unified production pipeline. No rush to remove functioning tools.
+- Historical browser-based creative services remain outside Studio's active product/tool screen. Their hosted services and data are not deleted; browser tool shortcuts are not part of the native Studio stack. This replaces the older browser-first catalog direction.
 
 **Minimal next test:** make progress on the existing zombie experience with Godot gameplay and only the Blender assets necessary to support it; preserve current Wolf streaming, demo exit controls and original project data. Revisit tooling only in response to observed bottlenecks. This is a **priority clarification**, not new v1 scope, and supersedes earlier Blockbench-first recommendations.
+
+## Revised product tool boundary — 2026-10-20
+
+**Decision:** Keep a deliberately small **native-first** integration roster. Studio is a project/asset/AI orchestration environment, not a gallery of every editor available on the host. This clarifies product direction and **does not amend the six frozen v1 acceptance gates**.
+
+- **Already connected in current GTK source:** Godot (project-aware), Blender and Krita (existing Wolf desktop), plus Studio Desktop/Moonlight access. These are the only current Creative Tools GUI actions.
+- **First coding-editor pilot:** Zed, for its Codex ACP/ChatGPT account and Godot GDScript language-server path. Verify working Vulkan *inside the Wolf container*, editable project directory, one real Codex conversation and session recovery. The built-in Godot editor remains the zero-extra-dependency fallback. Evaluate VSCodium only if Zed fails these checks; do not maintain two coding-editor adapters by default.
+- **Pixel art:** Required capability, editor **not yet selected**. Compare Aseprite (documented Lua scripting/batch spritesheet export; redistribution license review) against LibreSprite (free native option, specific scripting/export features to verify). Codex should operate on project-owned assets through scoped scripts/CLI and Godot import, not require a separate integrated AI chatbot in a pixel editor.
+- **Music + SFX:** Required production capabilities. Trial LMMS as the score/loop editor, SunVox as an alternative; Audacity as the audio editing/export counterpart. Retain source and versioned Godot-ready WAV/OGG. No audio launcher becomes active before an end-to-end project file roundtrip.
+- **Blockbench:** Keep as a native low-poly candidate only if it demonstrably improves model creation over Blender; do not restore its old hosted-browser shortcut.
+- **Retired hosted editor shortcuts:** UltraBox, AudioMass, openDAW, Piskel web, Onionskyn, CozyClay and browser Blockbench are not Studio's supported creative pipeline. Services/files aren't removed from the server by this GUI change and can remain useful personally outside Studio.
+
+**Promotion gate for any new tool:** (1) specific project opens, (2) app launches once on the actual Wolf environment, (3) user/Codex edits are scoped to the selected project, (4) editable source and exports are recorded, (5) Godot imports successfully, (6) restart/reconnect preserves work, (7) CI fixture and one live smoke test pass, (8) license/distribution policy is understood. The GUI must not suggest a candidate works before this evidence exists.
+
+**Product simplicity rule:** one preferred app per task wherever feasible; choose a fallback only when an upstream blocker is demonstrated. Codex's project context, permissions and resumable sessions must be authoritative in Studio, whether invoked from Zed ACP or a standalone terminal. Do not start unrelated concurrent agents just to make Zed look integrated.
