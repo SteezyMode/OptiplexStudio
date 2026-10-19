@@ -20,3 +20,17 @@ notebook > header tabs tab:checked label {color:#ece8e0;}
 button:disabled {opacity:0.45;}
 
 progressbar text {color:#b8b4ac;}
+
+/* Creative Tools: native capability groups, rather than an unstructured link grid. */
+#tool-page-title {font-size:15px;font-weight:800;letter-spacing:1px;color:#ece8e0;}
+#tool-group {background:#171b19;border:1px solid #414b45;border-radius:5px;}
+#tool-group > border {border:0;}
+#tool-heading {font-size:12px;font-weight:800;letter-spacing:1px;color:#a1e2d7;}
+#tool-description {font-size:11px;color:#b8b4ac;}
+#tool-card, #tool-candidate {background:#202622;border:1px solid #47524a;border-radius:4px;padding:10px;min-height:78px;}
+#tool-candidate {background:#191d1b;border-color:#343b36;}
+#tool-action {font-size:13px;font-weight:800;padding:10px 12px;min-height:38px;background:#2a332d;border:1px solid #6a8b79;color:#ece8e0;border-radius:3px;}
+#tool-action:hover {background:#2a9d8f;color:#101111;}
+#tool-action:disabled {opacity:0.5;}
+#tool-candidate-name {font-size:13px;font-weight:750;color:#d0d3c9;}
+#tool-pending {font-size:9px;font-weight:800;letter-spacing:1px;color:#baa87c;}
