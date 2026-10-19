@@ -42,7 +42,7 @@ def drive():
                 expected=base/'game'/('assets' if phase[0]=='assets' else '')
                 if dialog.get_current_folder_file().get_path()==str(expected):
                     if phase[0]=='files':
-                        dialog.select_file(Gio.File.new_for_path(str(base/'game/GAME.md')))
+                        dialog.set_filename(str(base/'game/GAME.md'))
                         phase[0]='select-download'
                     else:
                         phase[0]='ai-start'

@@ -5,7 +5,7 @@ After the release-workflow cleanup PR is merged, routine commits to `main` run v
 ## Release checklist
 
 1. Finish the frozen v1 acceptance gates before calling a release v1.0. Experimental Wolf-host improvements are **not automatically present** in the packaged GTK app.
-2. Prepare a release PR that bumps the same version in `studio/package.py`, `studio/validate_package.py`, `.github/workflows/ci.yml` (package path) and release/status documentation. Keep a single expected version for one release.
+2. Prepare a release PR that updates **`studio/version.py` (PACKAGE_VERSION)** and release/status documentation. The package builder and payload validator read this single version; normal CI discovers the built artifact rather than hardcoding its filename. Review the complete release diff.
 3. Verify unit tests, isolated GTK tests, package payload validation and a manual clean native GUI smoke test on the intended distro.
 4. Review the exact source commit, then push a **new** annotated `vX.Y.Z` tag for it. Do not force-update old release tags.
 5. The tag-only workflow builds against that commit, requires the .deb's metadata version to equal the tag, runs the GUI/package checks, emits a SHA-256 checksum and publishes a new release. It refuses to overwrite an existing release.

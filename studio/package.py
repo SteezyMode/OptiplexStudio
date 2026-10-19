@@ -1,4 +1,5 @@
 from pathlib import Path
+from version import PACKAGE_VERSION
 import shutil
 import subprocess
 import struct
@@ -28,7 +29,7 @@ for filename in ('optiplex-studio.png', 'optiplex-studio-tray.png'):
         raise SystemExit('Approved PNG dimensions do not match: ' + str(path))
     icons.append((path, f'usr/share/icons/hicolor/{width}x{height}/apps'))
 arch = subprocess.check_output(['dpkg', '--print-architecture'], text=True).strip()
-name = f'optiplex-studio_0.3.0_{arch}'
+name = f'optiplex-studio_{PACKAGE_VERSION}_{arch}'
 pkg = root / 'build' / name
 if pkg.exists():
     shutil.rmtree(pkg)
@@ -58,7 +59,7 @@ StartupNotify=true
 StartupWMClass=optiplex-studio
 ''')
 (pkg / 'DEBIAN/control').write_text(f'''Package: optiplex-studio
-Version: 0.3.0
+Version: {PACKAGE_VERSION}
 Section: devel
 Priority: optional
 Architecture: {arch}
