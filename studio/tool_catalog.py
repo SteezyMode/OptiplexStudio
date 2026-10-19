@@ -1,51 +1,34 @@
-"""Creative Tools catalog: capabilities first, verified native actions only.
+"""Native Creative Tools screen: only confirmed Studio launch actions.
 
-This is deliberately data-only. Candidate tools are not installed, invoked, or
-advertised as working from the UI until the corresponding adapter has tests.
-The previously hosted browser editors are outside Studio's tool catalog.
+Every entry must have an actual, tested handler. Candidate editors belong in
+the roadmap until their host availability and project integration are verified.
+The retired browser editor catalog remains in Git history, not this UI.
 """
 
 TOOL_GROUPS = (
     {
-        "title": "WORKSPACE",
-        "description": "Connect to your existing streamed desktop or open Moonlight.",
-        "tools": (
-            ("Studio Desktop", "desktop", "Open the existing Wolf workspace.", "ready"),
-            ("Moonlight", "moonlight", "Open the streaming client.", "ready"),
+        'title': 'DESKTOP ACCESS',
+        'description': 'Connect to the existing remote workspace.',
+        'tools': (
+            ('Studio Desktop', 'desktop', 'Open the current Wolf desktop session.'),
+            ('Moonlight', 'moonlight', 'Open the existing streaming client.'),
         ),
     },
     {
-        "title": "GAME & CODE",
-        "description": "Edit scenes, run your game and work with source code.",
-        "tools": (
-            ("Godot", "godot", "Open the selected Godot project.", "ready"),
-            ("Zed / VSCodium", None, "Coding editor pilot; no adapter installed by Studio.", "evaluation"),
+        'title': 'GAME PROJECT',
+        'description': 'Edit and preview the selected game.',
+        'tools': (
+            ('Godot', 'godot', 'Open or focus the selected Godot project.'),
         ),
     },
     {
-        "title": "3D & ANIMATION",
-        "description": "Models, materials, rigging and animation.",
-        "tools": (
-            ("Blender", "blender", "Open in the existing Wolf desktop.", "ready"),
-            ("Blockbench", None, "Evaluate a native low-poly workflow alongside Blender.", "evaluation"),
-        ),
-    },
-    {
-        "title": "2D & PIXEL ART",
-        "description": "Textures, sprites, frame animation and game art.",
-        "tools": (
-            ("Krita", "krita", "Open in the existing Wolf desktop.", "ready"),
-            ("LibreSprite / Aseprite", None, "Native pixel editor comparison; not yet integrated.", "evaluation"),
-        ),
-    },
-    {
-        "title": "MUSIC & SOUND",
-        "description": "Compose scores and prepare effects for Godot.",
-        "tools": (
-            ("LMMS / SunVox", None, "Native composition workflow to validate.", "evaluation"),
-            ("Audacity", None, "Native sound-effect editor to validate.", "evaluation"),
+        'title': 'ART & 3D',
+        'description': 'Open installed creative programs in the Wolf desktop.',
+        'tools': (
+            ('Blender', 'blender', 'Model, texture and animate 3D assets.'),
+            ('Krita', 'krita', 'Paint textures and illustrations.'),
         ),
     },
 )
 
-READY_ACTIONS = frozenset(("desktop", "moonlight", "godot", "blender", "krita"))
+READY_ACTIONS = frozenset(('desktop', 'moonlight', 'godot', 'blender', 'krita'))
