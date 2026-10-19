@@ -31,7 +31,7 @@ make -f Makefile.studio package
 /usr/bin/python3 -B studio/validate_package.py
 ```
 
-A green build validates packaging and fixtures, not live Wolf, Blender, Godot, Codex, networking or persistence. Building does not install or update the running desktop.
+Package versions are defined in **studio/version.py**; do not patch multiple scripts or CI filenames to bump a release. A green build validates packaging and fixtures, not live Wolf, Blender, Godot, Codex, networking or persistence. Building does not install or update the running desktop.
 
 ## Change rules
 
