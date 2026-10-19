@@ -35,4 +35,4 @@ These notes describe past research, examples, prototype assets and experimental 
 4. Keep credentials, private projects, unlicensed visual references and session tokens out of Git.
 5. Code/document changes should be scoped to their owning repo. NOW does not own Studio's creative pipeline, and Suite is only a navigational/architectural hub.
 
-The public product name and application-code license remain unresolved decisions; see the [Suite brand migration inventory](https://github.com/SteezyMode/OptiplexSuite/blob/main/docs/PUBLIC-BRAND-MIGRATION.md) and the contributor guide. Do not invent a license or rename persisted technical IDs without a tested migration.
+The public product name and application-code license remain unresolved decisions. Follow the [contributor guide](../CONTRIBUTING.md) for current code boundaries. Before renaming, protect package/executable names, GTK application IDs, configuration paths, project manifests and Wolf shortcuts with tested compatibility and rollback. Do not invent a license or rename persisted technical IDs without those tests. Private Suite coordination notes are not required to build this public repository.
