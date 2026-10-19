@@ -5,9 +5,10 @@
 
 **Remote development:** [Persistent SSH/Codex sessions with tmux](docs/remote-development-tmux.md) — survive client disconnects (not host reboots).
 
-Native GTK3 creative workspace for OptiPlex projects, assets, documentation, Codex sessions and Wolf desktop streaming over Tailscale.
+Native GTK3 creative workspace for projects, assets, documentation, and Codex-assisted game development. It is independently installable; Wolf can optionally provide a streamed graphical session.
 
 - [Download OptiPlex Studio 0.3.0](https://github.com/SteezyMode/OptiplexStudio/releases/tag/v0.3.0)
+- [New contributor guide and code map](CONTRIBUTING.md)
 - [Build, configuration and workflow documentation](README-STUDIO.md)
 - [0.3.0 release notes and testing limits](RELEASE-0.3.0.md)
 
@@ -30,4 +31,4 @@ Release packages include the approved PNG icons unchanged and a SHA-256 sidecar.
 
 ## Active development handoff
 
-- [Milestone 8 — Studio Art Director: curated visual references, 3D asset library and next steps](docs/MILESTONE-8-ART-DIRECTOR-HANDOFF-2026-10-18.md)
+- [Art Director experimental handoff (not a seventh frozen v1 milestone)](docs/MILESTONE-8-ART-DIRECTOR-HANDOFF-2026-10-18.md)
