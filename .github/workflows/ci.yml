@@ -26,5 +26,9 @@ jobs:
           set -euo pipefail
           /usr/bin/python3 -m unittest discover -s tests -p 'test_desktop_process.py' -v
           make -f Makefile.studio package
-          /usr/bin/python3 -B tests/run_gtk.py --package dist/optiplex-studio_0.3.0_amd64.deb
-          /usr/bin/python3 -B studio/validate_package.py
+          mapfile -t packages < <(find dist -maxdepth 1 -type f -name 'optiplex-studio_*_amd64.deb')
+          test "${#packages[@]}" -eq 1
+          package="${packages[0]}"
+          test "$(dpkg-deb -f "$package" Package)" = "optiplex-studio"
+          /usr/bin/python3 -B tests/run_gtk.py --package "$package"
+          /usr/bin/python3 -B studio/validate_package.py "$package"
