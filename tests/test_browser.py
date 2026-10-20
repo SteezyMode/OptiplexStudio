@@ -127,7 +127,10 @@ class DesktopEnvironment(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             sock=socket.socket(socket.AF_UNIX)
             try:
-                sock.bind(str(Path(directory)/'wayland-1'))
+                try:
+                    sock.bind(str(Path(directory)/'wayland-1'))
+                except PermissionError:
+                    self.skipTest('Unix sockets are prohibited in this sandbox')
                 source=desktop_helper.ENVIRONMENT_SOURCE.replace("Path('/run/user/wolf')",'Path('+repr(directory)+')')
                 result=subprocess.check_output(['/usr/bin/python3','-c',source],env=dict(os.environ,WAYLAND_DISPLAY='wayland-2'),text=True)
                 self.assertEqual(json.loads(result)['WAYLAND_DISPLAY'],'wayland-1')

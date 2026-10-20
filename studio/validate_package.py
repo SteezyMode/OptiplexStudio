@@ -1,5 +1,6 @@
 """Inspect a built Debian artifact without installing it or running remote actions."""
 import ast
+from version import PACKAGE_VERSION
 import configparser
 import hashlib
 import io
@@ -9,7 +10,6 @@ import subprocess
 import sys
 import tarfile
 import tempfile
-from version import PACKAGE_VERSION
 
 root = Path(__file__).resolve().parents[1]
 package = Path(sys.argv[1]) if len(sys.argv) > 1 else root / f'dist/optiplex-studio_{PACKAGE_VERSION}_amd64.deb'
@@ -39,7 +39,7 @@ with tarfile.open(fileobj=io.BytesIO(subprocess.check_output(['dpkg-deb', '--fsy
     assert not any('optiplex-now' in p or p.endswith('.svg') for p in files), 'Wrong application/artwork'
 
 modules = ['app.py', 'core.py', 'project_client.py', 'project_helper.py', 'project_ui.py',
-           'desktop_helper.py', 'godot_focus.py', 'file_browser.py', 'session_helper.py', 'session_ui.py', 'style.css']
+           'desktop_helper.py', 'godot_focus.py', 'file_browser.py', 'session_helper.py', 'session_ui.py', 'native_tools.py', 'portable_install.py', 'tool_environment.py', 'tools_ui.py', 'conversation_store.py', 'codex_install.py', 'codex_rpc.py', 'embedded_codex.py', 'embedded_ui.py', 'transcript.py', 'style.css']
 expected = {'usr/bin/optiplex-studio', 'usr/share/doc/optiplex-studio/README.md',
             'usr/share/applications/com.monumentrisk.OptiPlexStudio.desktop'}
 for module in modules:

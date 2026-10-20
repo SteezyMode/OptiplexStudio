@@ -1,4 +1,4 @@
-"""Project workflows over the existing validated Tailscale SSH connection."""
+"""Local project workflows using the validated project engine."""
 import base64
 from datetime import datetime, timezone
 import hashlib
@@ -17,7 +17,7 @@ import project_helper as policy
 OPERATIONS = {'create', 'inspect_assets', 'put_asset', 'docs', 'ensure_docs', 'save_doc', 'inventory', 'snapshot', 'browse', 'desktop', 'desktop_status', 'list_projects', 'sessions', 'browse_project'}
 
 
-def request(config, project, operation, progress=None, request_timeout=180, **fields):
+def remote_request(config, project, operation, progress=None, request_timeout=180, **fields):
     if operation not in OPERATIONS:
         raise ValueError('Unsupported project operation.')
     policy.project_name(project)
@@ -88,14 +88,12 @@ def request(config, project, operation, progress=None, request_timeout=180, **fi
 
 def remote_project_path(config, project):
     policy.project_name(project)
-    core.ssh_args(config, 'edit', project)  # validate configured user and numeric IP
-    home = '/root' if config['user'] == 'root' else '/home/' + config['user']
-    return f'{home}/StudioProjects/Godot/{project}'
+    return str(workspace(config) / project)
 
 
 def project_uri(config, project, assets=False):
-    path = remote_project_path(config, project) + ('/assets' if assets else '')
-    return f'sftp://{config["user"]}@{core.tailscale_ip(config)}' + quote(path, safe='/')
+    path = Path(remote_project_path(config, project)) / 'assets' if assets else Path(remote_project_path(config, project))
+    return path.as_uri()
 
 
 def asset_uri(config, project):
@@ -247,3 +245,50 @@ def export_snapshot(config, project, manifest, selections, destination, overwrit
     finally:
         if temporary is not None:
             temporary.unlink(missing_ok=True)
+
+
+def local_request(config, project, operation, progress=None, request_timeout=180, **fields):
+    """Execute a project operation locally without SSH or Wolf."""
+    if operation not in OPERATIONS - {"desktop", "desktop_status"}:
+        raise ValueError("Unsupported local project operation.")
+    policy.project_name(project)
+    payload = dict(fields, version=policy.VERSION, project=project, operation=operation)
+    if len(json.dumps(payload).encode()) > policy.MAX_REQUEST:
+        raise ValueError('Transfer request exceeds size limit.')
+    base = workspace(config)
+    if operation == "list_projects" and not base.exists():
+        return []
+    if operation == "sessions":
+        from session_helper import list_codex_sessions
+        return list_codex_sessions(base, project, dict(fields, _config=config))
+    if operation == 'create':
+        # Create workspace components through directory descriptors; reject symlinks.
+        fd = os.open('/', os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            for part in base.parts[1:]:
+                try:
+                    os.mkdir(part, 0o755, dir_fd=fd)
+                except FileExistsError:
+                    pass
+                child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=fd)
+                os.close(fd)
+                fd = child
+        finally:
+            os.close(fd)
+    result = policy.handle(dict(fields, version=policy.VERSION, project=project, operation=operation), base=base)
+    if progress:
+        progress(1.0)
+    return result
+
+
+def workspace(config):
+    """Normalize an explicitly configured local workspace without migrating data."""
+    value = config.get('projects_dir') or str(Path.home() / 'StudioProjects')
+    path = Path(value).expanduser()
+    if not path.is_absolute() or '..' in path.parts:
+        raise ValueError('Choose an absolute workspace path without parent traversal.')
+    return path
+
+
+def request(config, project, operation, progress=None, request_timeout=180, **fields):
+    return local_request(config, project, operation, progress, request_timeout, **fields)

@@ -174,7 +174,7 @@ class ProjectUI:
             except Exception as exc:
                 self.remote_folder.end(error=str(exc))
         self.project_task(lambda progress: client.request(config, project, 'browse' if assets else 'browse_project'),
-                          opened, f'Checking {project} folder and SSH access…')
+                          opened, f'Checking {project} local folder…')
 
     def creative_tool(self, name, url):
         context = self.selected_context()
@@ -185,7 +185,7 @@ class ProjectUI:
         dialog = Gtk.Dialog(title=f'{name} — {project}', transient_for=self.window, modal=True)
         dialog.add_buttons('CLOSE', Gtk.ResponseType.CLOSE, 'BROWSE ASSETS', 1, 'IMPORT EXPORTS', 2, 'OPEN TOOL', 3)
         text = (f'Active project: {project}\n\nShared project: {client.remote_project_path(config, project)}\n\n'
-                'Browser tools keep their own documents. They do not save directly into the remote project. '
+                'Browser tools keep their own documents. They do not save directly into the local project. '
                 'Export/download files to this computer, then use Import Assets to transfer them into this project.\n\n' +
                 '\n'.join(f'{category}: {path}/' for category, path in policy.CATEGORIES.items()) +
                 '\n\nTypical exports: PNG/WebP for sprites, GLB/glTF for models, WAV/OGG for audio. '
@@ -205,30 +205,24 @@ class ProjectUI:
         elif response == 3:
             self.open_url(url)
 
-    def open_studio_desktop(self, _=None):
-        config = dict(self.config)
-        def task(progress):
-            return core.launch_studio_desktop(config, on_error=lambda error: GLib.idle_add(self.status.set_text, error))
-        self.project_task(task, lambda result: self.status.set_text(result),
-                          'Connecting directly to the Wolf desktop…')
-
     def open_desktop_application(self, application):
+        from native_tools import launch
         config = dict(self.config)
-        project = self.combo.get_active_id() or '__desktop__'
-        def task(progress):
-            errors = []
-            def failed(message):
-                errors.append(message)
-                GLib.idle_add(self.status.set_text, message)
-            stream = core.launch_studio_desktop(config, on_error=failed)
-            core.wait_for_studio_desktop(config, '__desktop__', stream_errors=errors,
-                                         on_progress=lambda message: GLib.idle_add(self.status.set_text, message))
-            result = client.request(config, project, 'desktop', application=application)
-            return result['message'] + ' ' + stream
-        self.project_task(task, lambda result: self.status.set_text(result), f'Opening {application.title()} in Studio Desktop…')
+        project = self.combo.get_active_id()
+        self.project_task(lambda progress: launch(config, application, project),
+                          lambda result: self.status.set_text(result), f'Opening local {application.title()}…')
 
     def browse_project(self, _=None):
         self.browse_remote_folder(False)
+
+    def ai_memory(self, _=None):
+        context = self.selected_context()
+        if not context or self.busy:
+            return
+        config, project = context
+        self.project_task(lambda progress: client.request(config, project, 'docs'),
+                          lambda result: self.edit_document(config, project, 'AI_MEMORY.md', result['AI_MEMORY.md']),
+                          'Reading Project AI memory…')
 
     def documents(self, _=None):
         context = self.selected_context()
@@ -264,7 +258,7 @@ class ProjectUI:
         dialog.set_default_size(720, 520)
         box = dialog.get_content_area()
         box.set_border_width(12)
-        box.pack_start(self.label('Save updates only this document over SSH with a conflict check. No commit is made.', 'helper'), False, False, 6)
+        box.pack_start(self.label('Save updates only this local document with a conflict check. No commit is made.', 'helper'), False, False, 6)
         scroll = Gtk.ScrolledWindow()
         text = Gtk.TextView()
         text.set_monospace(True)

@@ -20,7 +20,7 @@ B = '12345678-1234-1234-1234-123456789013'
 C = '12345678-1234-1234-1234-123456789014'
 
 class Templates(unittest.TestCase):
-    def test_all_templates_and_legacy_projects_no_migration(self):
+    def test_unified_project_contract(self):
         with tempfile.TemporaryDirectory() as directory:
             base = Path(directory)
             for index, kind in enumerate(helper.PROJECT_TYPES):
@@ -29,7 +29,7 @@ class Templates(unittest.TestCase):
                 project = helper.Project(base, name)
                 try:
                     self.assertEqual(project.kind, kind)
-                    self.assertEqual((base / name / 'project.godot').exists(), kind == 'Godot')
+                    self.assertEqual((base / name / 'project.godot').exists(), kind == 'Studio')
                     self.assertEqual(project.metadata()['type'], kind)
                     self.assertTrue(all((base / name / doc).is_file() for doc in helper.DOCS))
                     original = project.read('GAME.md', helper.MAX_TEXT)
@@ -42,12 +42,12 @@ class Templates(unittest.TestCase):
                     self.assertIn('docs/notes.md', [i['path'] for i in snapshot['files']])
                 finally:
                     project.close()
-            (base / 'project-1/studio-project.json').unlink()  # Existing Godot has no manifest.
+            (base / 'project-0/project.godot').unlink()  # Missing engine files do not erase the Studio workspace.
             (base / 'unrelated').mkdir()
-            (base / 'linked').symlink_to(base / 'project-1', target_is_directory=True)
+            (base / 'linked').symlink_to(base / 'project-0', target_is_directory=True)
             result = helper.handle({'version': 1, 'operation': 'list_projects', 'project': 'Studio'}, base)
-            self.assertEqual(len(result), 5)
-            self.assertEqual(next(p['type'] for p in result if p['name'] == 'project-1'), 'Godot')
+            self.assertEqual(len(result), 1)
+            self.assertEqual(next(p['type'] for p in result if p['name'] == 'project-0'), 'Studio')
             with self.assertRaisesRegex(ValueError, 'Unsupported project template'):
                 helper.create_project(base, 'bad', '../escape')
             self.assertFalse((base / 'bad').exists())
@@ -72,19 +72,22 @@ for line in sys.stdin:
         with tempfile.TemporaryDirectory() as directory:
             home = Path(directory)
             base = home / 'StudioProjects/Godot'
+            base.mkdir(parents=True)
+            helper.create_project(base, 'one', 'Studio')
+            helper.create_project(base, 'two', 'Studio')
             rows = [dict(id=A, name='Alpha', cwd=str(base/'one'), updatedAt=20, createdAt=1),
                     dict(id=B, preview='Beta', cwd=str(base/'one'), updatedAt=30, createdAt=2),
                     dict(id=C, name='Other project', cwd=str(base/'two'), updatedAt=10, createdAt=3),
                     dict(id='invalid; shell', cwd=str(base/'one'))]
             cli = self.fixture(home, rows)
             with patch('pathlib.Path.home', return_value=home):
-                result = list_codex_sessions(base, 'one', {})
+                result = list_codex_sessions(base, 'one', {'_config': {'codex_path': str(cli)}})
                 self.assertEqual([r['id'] for r in result['sessions']], [A,B])
                 params = json.loads(Path(str(cli)+'.request').read_text())
-                self.assertEqual(params['cwd'], str(base/'one'))
+                self.assertNotIn('cwd', params)
                 self.assertTrue(params['useStateDbOnly'])
                 self.assertEqual(result['nextCursor'], 'page-two')
-                all_rows = list_codex_sessions(base, 'one', {'all_projects':True,'cursor':'page-two'})['sessions']
+                all_rows = list_codex_sessions(base, 'one', {'all_projects':True,'cursor':'page-two', '_config': {'codex_path': str(cli)}})['sessions']
                 self.assertEqual({r['project'] for r in all_rows}, {'one','two'})
                 self.assertNotIn('cwd', json.loads(Path(str(cli)+'.request').read_text()))
                 self.assertEqual([r['id'] for r in session_rows(all_rows,sort='Recent')], [B,A,C])
@@ -95,10 +98,10 @@ for line in sys.stdin:
     def test_unsupported_cli_metadata_is_visible(self):
         with tempfile.TemporaryDirectory() as directory:
             home = Path(directory)
-            self.fixture(home, [], error=True)
+            cli = self.fixture(home, [], error=True)
             with patch('pathlib.Path.home', return_value=home):
                 with self.assertRaisesRegex(RuntimeError, 'Unsupported method'):
-                    list_codex_sessions(home, 'one', {})
+                    list_codex_sessions(home, 'one', {'_config': {'codex_path': str(cli)}})
 
     def test_resume_uuid_and_prompt_command_construction(self):
         def terminal(command):
@@ -110,17 +113,17 @@ for line in sys.stdin:
             process=MagicMock()
             process.__enter__.return_value.communicate.return_value=('', '')
             with patch('core.terminal_args', side_effect=terminal), patch('core.subprocess.Popen', return_value=process):
-                core.run_action(CONFIG,'resume','one',**kwargs)
+                core.remote_run_action(CONFIG,'resume','one',**kwargs)
             remote=shlex.split(captured[-1])
             self.assertEqual(remote[-2:],expected)
             self.assertEqual(remote[2],'/home/artist/StudioProjects/Godot/one')
         with patch('core.subprocess.Popen') as spawn:
-            with self.assertRaises(ValueError): core.run_action(CONFIG,'resume','one',session_id='bad;command')
-            with self.assertRaises(ValueError): core.run_action(CONFIG,'code','one',prompt='arbitrary')
+            with self.assertRaises(ValueError): core.remote_run_action(CONFIG,'resume','one',session_id='bad;command')
+            with self.assertRaises(ValueError): core.remote_run_action(CONFIG,'code','one',prompt='arbitrary')
             spawn.assert_not_called()
         captured=[]
         with patch('core.terminal_args', side_effect=terminal), patch('core.subprocess.Popen', return_value=process):
-            core.run_action(CONFIG,'code','one',prompt=core.CODEX_TASKS['Explain Project'])
+            core.remote_run_action(CONFIG,'code','one',prompt=core.CODEX_TASKS['Explain Project'])
         self.assertEqual(shlex.split(captured[-1])[-1], core.CODEX_TASKS['Explain Project'])
 
     def test_helper_source_contains_supported_session_listing(self):
@@ -130,7 +133,7 @@ for line in sys.stdin:
                 return "import json,sys\njson.load(sys.stdin)\nprint(json.dumps({'ok': True, 'result': {'available': callable(list_codex_sessions)}}))"
             return original(path, *args, **kwargs)
         with patch('core.ssh_args', return_value=['/bin/sh','-c','replaced']), patch('project_client.Path.read_text', new=read):
-            result = project_client.request(CONFIG,'one','sessions')
+            result = project_client.remote_request(CONFIG,'one','sessions')
         self.assertTrue(result['available'])
 
 class Routing(unittest.TestCase):
@@ -138,9 +141,10 @@ class Routing(unittest.TestCase):
         from test_projects import GUIActions
         import app
         for action, kwargs in [('code', {'prompt': core.CODEX_TASKS['Review Changes']}),
+                               ('code', {'prompt': 'Review this project\nPreserve existing work.'}),
                                ('resume', {'session_id': A})]:
             fake = GUIActions().fake()
-            with patch('app.project_client.request', return_value={}) as request, patch('app.core.run_action', return_value='done') as run:
+            with patch('app.project_client.request', return_value={}) as request, patch('native_tools.run_action', return_value='done') as run:
                 app.Studio.action(fake, action, 'game', **kwargs)
             request.assert_called_once_with(fake.config, 'game', 'ensure_docs')
             self.assertEqual(run.call_args.args[:3], (fake.config, action, 'game'))
@@ -152,16 +156,15 @@ class Routing(unittest.TestCase):
         from test_network import Widget
         import app
         fake = GUIActions().fake()
-        fake.rows = [{'name':'game','type':'Music/Audio'}]
+        fake.rows = [{'name':'game','type':'Studio'}]
         fake.project_buttons, fake.godot_buttons, fake.connection_buttons = [Widget()], [Widget()], [Widget()]
         fake.detail, fake.active_label = Widget(), Widget()
         app.Studio.selection_changed(fake,None)
         self.assertTrue(fake.project_buttons[0].sensitive)
-        self.assertFalse(fake.godot_buttons[0].sensitive)
-        with patch('app.core.run_action') as run:
+        self.assertTrue(fake.godot_buttons[0].sensitive)
+        with patch('native_tools.run_action') as run:
             app.Studio.action(fake,'edit','game')
-            run.assert_not_called()
-        self.assertIn('Godot project', fake.status.text)
+            run.assert_called_once()
         fake.combo.get_active_id.return_value = None
         app.Studio.selection_changed(fake,None)
         self.assertFalse(fake.project_buttons[0].sensitive)
@@ -169,19 +172,84 @@ class Routing(unittest.TestCase):
         self.assertTrue(fake.connection_buttons[0].sensitive)
         fake.config = {'host': '', 'user': 'artist'}
         app.Studio.selection_changed(fake, None)
-        self.assertFalse(fake.connection_buttons[0].sensitive)
-        self.assertFalse(fake.create_button.sensitive)
+        self.assertTrue(fake.connection_buttons[0].sensitive)
+        self.assertTrue(fake.create_button.sensitive)
 
-    def test_independent_creative_tool_streams_before_helper(self):
+    def test_independent_creative_tool_launches_locally(self):
         from test_projects import GUIActions
         from project_ui import ProjectUI
         fake = GUIActions().fake()
         fake.combo.get_active_id.return_value = None
-        calls=[]
         fake.project_task = lambda task, done, message: done(task(lambda *args: None))
-        with patch('project_ui.core.launch_studio_desktop',side_effect=lambda *args,**kw: calls.append('stream') or 'Streaming'), patch('project_ui.core.wait_for_studio_desktop',side_effect=lambda *args,**kw: calls.append('ready')), patch('project_ui.client.request',side_effect=lambda *args,**kw: calls.append((args[1], kw['application'])) or {'message':'Opened'}):
-            ProjectUI.open_desktop_application(fake,'krita')
-        self.assertEqual(calls,['stream','ready',('__desktop__','krita')])
+        with patch('native_tools.launch', return_value='Opened') as launch:
+            ProjectUI.open_desktop_application(fake, 'krita')
+        launch.assert_called_once_with(fake.config, 'krita', None)
+
+class AIComposer(unittest.TestCase):
+    def fake(self, text='Review the scene\nKeep existing assets.'):
+        from types import SimpleNamespace
+        import app
+        buffer = MagicMock()
+        buffer.get_bounds.return_value = (0, len(text))
+        buffer.get_text.return_value = text
+        fake = SimpleNamespace(ai_run=MagicMock(), ai_prompt=MagicMock(),
+                               combo=MagicMock(), rows=[{'name': 'game'}], busy=False,
+                               action=MagicMock(), open_embedded=MagicMock(), status=MagicMock())
+        fake.ai_prompt.get_buffer.return_value = buffer
+        fake.combo.get_active_id.return_value = 'game'
+        return app, fake
+
+    def test_run_sensitivity_tracks_prompt_project_and_busy_state(self):
+        app, fake = self.fake()
+        for text, project, busy, expected in [
+            ('Review', 'game', False, True), ('Review', 'game', True, False),
+            ('Review', None, False, False), ('Review', 'unknown', False, False),
+            ('  \n', 'game', False, False), ('x' * 32001, 'game', False, False),
+            ('bad\0text', 'game', False, False)]:
+            fake.ai_prompt.get_buffer().get_text.return_value = text
+            fake.combo.get_active_id.return_value = project
+            fake.busy = busy
+            app.Studio.update_ai_run(fake)
+            fake.ai_run.set_sensitive.assert_called_with(expected)
+
+    def test_run_preserves_multiline_text_and_rejects_invalid_input(self):
+        app, fake = self.fake()
+        app.Studio.run_ai_prompt(fake)
+        fake.open_embedded.assert_called_once_with(prompt='Review the scene\nKeep existing assets.')
+        for invalid in ('', '  ', 'x' * 32001, 'bad\0text'):
+            fake.open_embedded.reset_mock()
+            fake.ai_prompt.get_buffer().get_text.return_value = invalid
+            app.Studio.run_ai_prompt(fake)
+            fake.open_embedded.assert_not_called()
+            fake.status.set_text.assert_called()
+
+    def test_layout_keeps_presets_and_advanced_actions_separate(self):
+        app, fake = self.fake()
+        fake.project_buttons = []
+        fake.label = MagicMock()
+        fake.button = MagicMock()
+        fake.session_browser = MagicMock()
+        fake.copy_brief = MagicMock()
+        fake.open_chatgpt = MagicMock()
+        fake.run_ai_prompt = MagicMock()
+        fake.update_ai_run = MagicMock()
+        grid = MagicMock()
+        # Build without a display; live widget checks are in gui_workflows.py.
+        with patch('app.Gtk.Box'), patch('app.Gtk.TextView'), patch('app.Gtk.ScrolledWindow'), patch('app.Gtk.Expander'):
+            app.Studio.build_ai_workspace(fake, MagicMock(), grid)
+        groups = [call.args[1] for call in grid.call_args_list]
+        self.assertEqual([entry[0] for entry in groups[0]], ['New Conversation', 'Resume Conversation'])
+        self.assertEqual([entry[0] for entry in groups[1]], ['Review Changes', 'Fix Godot Errors', 'Validate Project'])
+        self.assertEqual([entry[2] for entry in groups[1]], ['project', 'godot', 'godot'])
+        self.assertEqual([entry[0] for entry in groups[2]], ['Find Conversations', 'External Codex Terminal', 'Explain Project', 'Copy ChatGPT Brief', 'Open ChatGPT'])
+        for name, callback, _ in groups[1]:
+            callback(None)
+            fake.open_embedded.assert_called_with(prompt=core.CODEX_TASKS[name])
+        groups[0][0][1](None)
+        fake.open_embedded.assert_called_with()
+        groups[0][1][1](None)
+        fake.session_browser.assert_called_once_with(None)
+
 
 class Packaging(unittest.TestCase):
     def test_missing_approved_icons_fail_before_build(self):

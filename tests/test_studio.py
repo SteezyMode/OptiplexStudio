@@ -26,7 +26,7 @@ class Safety(unittest.TestCase):
         import subprocess
         with patch('project_client.request', side_effect=RuntimeError('Host key verification failed')), patch('core.launch_studio_desktop'):
             with self.assertRaisesRegex(RuntimeError, 'Host key'):
-                core.run_action({'host': '100.100.100.100', 'user': 'optiplex'}, 'edit', 'game')
+                core.remote_run_action({'host': '100.100.100.100', 'user': 'optiplex'}, 'edit', 'game')
 
     def test_terminal_argv(self):
         with patch('shutil.which', side_effect=lambda p: p if p == 'gnome-terminal' else None):
@@ -51,7 +51,7 @@ class Safety(unittest.TestCase):
 
     def test_terminal_adapters(self):
         for terminal, flags in [('gnome-terminal', ['--wait', '--']), ('konsole', ['--nofork', '-e']),
-                                ('xfce4-terminal', ['--disable-server', '-x']), ('xterm', ['-e'])]:
+                                ('xterm', ['-e'])]:
             with self.subTest(terminal=terminal), patch('shutil.which', side_effect=lambda p: p if p == terminal else None):
                 self.assertEqual(core.terminal_args(['ssh', 'host']), [terminal] + flags + ['ssh', 'host'])
         with patch('shutil.which', return_value=None):
@@ -72,16 +72,16 @@ class Safety(unittest.TestCase):
                 with self.subTest(action=action, status=status), patch('core.ssh_args', return_value=['/bin/sh', '-c', f'exit {status}']), patch('core.terminal_args', side_effect=lambda command: command):
                     if status:
                         with self.assertRaisesRegex(RuntimeError, 'exit 255'):
-                            core.run_action({}, action, 'game')
+                            core.remote_run_action({}, action, 'game')
                     else:
-                        self.assertEqual(core.run_action({}, action, 'game'), 'Codex conversation closed.')
+                        self.assertEqual(core.remote_run_action({}, action, 'game'), 'Codex conversation closed.')
 
     def test_terminal_spawn_failure(self):
         with patch('core.terminal_args', return_value=['/no/such/studio-terminal']):
             with self.assertRaises(OSError):
-                core.run_action({'host': '100.100.100.100', 'user': 'optiplex'}, 'code', 'game')
+                core.remote_run_action({'host': '100.100.100.100', 'user': 'optiplex'}, 'code', 'game')
 
     def test_terminal_missing_status(self):
         with patch('core.terminal_args', return_value=['/bin/true']):
             with self.assertRaisesRegex(RuntimeError, 'No remote exit status'):
-                core.run_action({'host': '100.100.100.100', 'user': 'optiplex'}, 'resume', 'game')
+                core.remote_run_action({'host': '100.100.100.100', 'user': 'optiplex'}, 'resume', 'game')

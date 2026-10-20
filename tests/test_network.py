@@ -21,7 +21,7 @@ class Networking(unittest.TestCase):
              patch('socket.socket', return_value=raw) as create, \
              patch('ssl.SSLContext.wrap_socket', autospec=True, return_value=tls) as wrap, \
              patch.dict('os.environ', {'HTTPS_PROXY': 'http://unreachable.invalid:8080'}):
-            self.assertEqual(core.projects(CONFIG)[0]['name'], 'game')
+            self.assertEqual(core.remote_projects(CONFIG)[0]['name'], 'game')
         create.assert_called_once_with(socket.AF_INET, socket.SOCK_STREAM)
         raw.connect.assert_called_once_with((CONFIG['host'], 443))
         context = wrap.call_args.args[0]
@@ -40,7 +40,7 @@ class Networking(unittest.TestCase):
                  patch('socket.getaddrinfo', side_effect=AssertionError('DNS fallback forbidden')), \
                  patch('ssl.SSLContext.wrap_socket', side_effect=error):
                 with self.assertRaises(type(error)):
-                    core.projects(CONFIG)
+                    core.remote_projects(CONFIG)
                 raw.close.assert_called_once()
 
     def test_tcp_connection_failure(self):
@@ -48,7 +48,7 @@ class Networking(unittest.TestCase):
         raw.connect.side_effect = OSError('network unreachable')
         with patch('socket.socket', return_value=raw), patch('ssl.SSLContext.wrap_socket') as wrap:
             with self.assertRaisesRegex(OSError, 'network unreachable'):
-                core.projects(CONFIG)
+                core.remote_projects(CONFIG)
             wrap.assert_not_called()
             raw.close.assert_called_once()
 
@@ -63,13 +63,13 @@ class Networking(unittest.TestCase):
             response.read.return_value = payload
             with self.subTest(status=status, error=error), patch('core.TailscaleHTTPSConnection', return_value=connection):
                 with self.assertRaises(error):
-                    core.projects(CONFIG)
+                    core.remote_projects(CONFIG)
                 connection.close.assert_called_once()
 
     def test_only_configured_tailnet_ip_allowed_for_api_and_ssh(self):
         for value in ('', 'optiplex', 'studio.monumentrisk.com', '8.8.8.8', '127.0.0.1', '100.128.0.1', '100.63.255.255', '100.100.100.101;id'):
             with self.subTest(value=value), patch('socket.socket') as connect:
-                for function in (lambda c: core.projects(c), lambda c: core.ssh_args(c, 'edit', 'game')):
+                for function in (lambda c: core.remote_projects(c), lambda c: core.ssh_args(c, 'edit', 'game')):
                     with self.assertRaises(ValueError):
                         function(dict(CONFIG, host=value))
                 connect.assert_not_called()
@@ -134,13 +134,13 @@ class GUIState(unittest.TestCase):
                 else: done(result, None)
         fake = Fake()
         fake.test = self
-        with patch('app.core.projects', side_effect=TimeoutError('Tailscale connection timed out')) as projects:
+        with patch('app.project_client.request', side_effect=OSError('Workspace unreadable')) as projects:
             app.Studio.refresh(fake)
-            projects.assert_called_once_with(CONFIG)
+            projects.assert_called_once_with(CONFIG, 'Studio', 'list_projects')
         self.assertEqual(fake.rows, [])
         self.assertIsNone(fake.combo.get_active_id())
         self.assertTrue(all(not b.sensitive for b in fake.project_buttons + fake.tray_project_items))
-        self.assertIn('Project API unavailable: Tailscale connection timed out', fake.status.text)
+        self.assertIn('Workspace unavailable: Workspace unreadable', fake.status.text)
         for action in ('edit', 'code', 'resume'):
             with patch('app.core.run_action') as run:
                 app.Studio.action(fake, action)

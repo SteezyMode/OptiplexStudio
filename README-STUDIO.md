@@ -1,370 +1,180 @@
-# OptiPlex Studio 0.3.0
+# OptiPlex Studio — local creative workspace
 
-> **Release-scope note (2026-10-19):** This document describes the **published v0.3.0 native GTK client**, not all later server-side Studio experiments or an already-installed GTK upgrade. For the latest actual host verification, frozen Studio v1 status and V3 zombie prototype, see [Current Status](docs/CURRENT-STATUS.md). Godot's Esc/F10 shared demo controls and Wolf XFCE X11 window fix were introduced after v0.3.0; they are not claims about the packaged application's built-in Play/Stop UI.
+Studio keeps its GTK3 interface, project templates, categorized assets, documents,
+reviewed context exports and project-aware Codex workflows. Normal operation runs
+on this computer. Wolf, Docker, SSH, Tailscale, Flatpak and a remote server are not
+required. Native creative applications and Codex are optional tools installed by
+the user; a missing tool does not prevent browsing or managing projects.
 
+Run `python3 -B studio/app.py` with Python 3, PyGObject and GTK3 installed.
+An optional supported terminal is required for interactive Codex sessions:
+xterm, GNOME Terminal, Konsole or XFCE Terminal.
 
-Independent native GTK3 project workspace, with a compiled C launcher and
-PyGObject interface. The NOW reference source, build files, installed application,
-and original artwork are unchanged. The approved Studio application and tray
-PNGs are supplied separately; no SVG substitutions or artwork conversions are made. Nothing in this release installs or modifies server services.
+## Workspace and existing data
 
-## Build and package
+The default workspace is `~/StudioProjects`. Change **Settings → Local workspace**
+to an absolute directory (a leading `~` is expanded). Creating the first project
+creates a missing workspace. Merely opening Studio does not create projects.
+Workspace and project directories must not be symlinks.
 
-    make -f Makefile.studio package
-    ./build/optiplex-studio
+Settings remain in `$XDG_CONFIG_HOME/optiplex-studio/config.json`, defaulting to
+`~/.config/optiplex-studio/config.json`. The `projects_dir` setting selects the
+workspace. Existing settings and remembered project selection are retained;
+legacy connection fields no longer control normal operation.
 
-Output: `dist/optiplex-studio_0.3.0_amd64.deb` on amd64. The package is independently
-installable alongside NOW; building it does not install it. Build requires GCC,
-make, Python 3 and dpkg-deb. Runtime dependencies are declared in the package.
+Studio never moves, converts or deletes existing projects. To use an older local
+layout such as `~/StudioProjects/Godot`, select that directory as the workspace.
+Remote data stays where it is; copying it locally is a separate user action.
+Recognized projects are immediate subdirectories containing `project.godot` or
+valid `studio-project.json` metadata. Invalid names and symlinks are excluded.
 
-For packaging, use the approved square PNGs already committed at these repository-relative paths:
+## Projects, assets and documents
 
-- `assets/optiplex-studio.png`
-- `assets/optiplex-studio-tray.png`
+New projects support Blank, Godot, Music/Audio, Animation and 3D templates.
+Each includes categorized asset folders and GAME.md, PROGRESS.md, DECISIONS.md
+AGENTS.md and AI_MEMORY.md. Godot includes a minimal scene and native project file. Git is
+initialized without a commit when available; if Git is missing, Studio reports a
+warning and the project remains usable. Existing project files are never replaced
+by template creation or missing-document initialization.
 
-The package script reads these files relative to the checkout; packaging does not require `/home/optiplex/StudioProjects` or Wolf.
+Project Files and Browse Assets open local folders through the file manager or
+the GTK fallback browser. Import Assets retains conflict review, size limits,
+content hashes and checks against files changing during import. Document writes
+still check the reviewed hash. Context exports remain explicitly selected ZIP
+snapshots with credential, symlink, traversal and size protections. Attach these
+snapshots to ChatGPT manually; nothing is uploaded automatically.
 
-The builder validates their PNG headers and dimensions, copies them unchanged
-into the matching hicolor size directories and the standard pixmaps fallback
-(for approved sizes absent from the hicolor index), and stops before staging
-if either is missing or cannot be decoded. No artwork is resized or regenerated.
-Both approved PNGs are included in the release source. No old SVGs are used.
-Validate a built artifact with `/usr/bin/python3 studio/validate_package.py`.
-Run isolated native GUI checks with `/usr/bin/python3 tests/run_gtk.py`.
-Validation CI builds and checks ordinary changes without publishing.
-A separate tag-only workflow publishes new versions after checking the package matches its version tag. Existing published assets are not overwritten.
+## Native creative tools
 
-App ID: `com.monumentrisk.OptiPlexStudio`. Settings remain in
-`$XDG_CONFIG_HOME/optiplex-studio/config.json`, defaulting to
-`~/.config/optiplex-studio/config.json`. Existing fields are retained when saving
-settings. Last project selection is kept separately in `project-state.json`.
-Existing NOW configuration is neither read nor changed.
+Godot opens the selected Godot project with `--editor --path PROJECT_DIRECTORY`.
+Blender, Blockbench, LMMS and Krita launch with the selected project as their
+working directory. Studio does not guess which source asset to open or overwrite
+an existing application session. Native launches may open another application
+window; window focusing is left to the desktop environment.
 
-## Project-first workspace
+Tools & Setup opens on first use and can be reopened from its tab or Settings.
+Review detected tools, use Choose Executable, or use Auto to clear an override.
+Install missing tools with per-download consent; Recheck updates status. Repair is
+available for incomplete Studio-managed optional packages and supported Codex components.
+Continue to Studio keeps existing tools and settings and permits incomplete setup.
+Ready means an executable file is available, not that runtime compatibility was tested.
+Invalid configured paths show Needs attention; a completed managed repair may resolve
+the original managed override without changing the saved setting.
 
-Projects live on the OptiPlex under `~/StudioProjects/Godot/PROJECT`. The desktop
-container must already mount the same directory as `/projects/Godot/PROJECT`.
-The directory name is retained for compatibility; it no longer defines the
-project type. The selector and + New Project button remain above Project,
-AI Workspace and Creative Tools tabs. Last selection is remembered, and the
-active project/type is visible while switching sections.
+Discovery prefers configured paths, PATH, ~/.local/bin, then bounded searches in
+persistent tool directories. Defaults include ~/.local/share/optiplex-studio/tools,
+~/.tools and /projects/.tools; Settings accepts additional absolute directories.
+Each root may contain TOOL-native or TOOL with version subdirectories. No version
+is pinned; use Choose to select a specific version. Executable paths are single
+files, never shell commands. Extracted AppImage squashfs-root/AppRun is supported
+without FUSE. No Flatpak, Docker, Wolf, SSH, Tailscale or root is required.
 
-Templates: Blank, Godot, Music/Audio, Animation and 3D. Each creates a Git
-repository, `studio-project.json` type marker, `GAME.md` (goals and creative
-direction), `PROGRESS.md`, `DECISIONS.md`, `AGENTS.md`, `docs/` and shared asset
-folders. Only the Godot template creates `project.godot` and a starting scene.
-Existing projects containing `project.godot` are recognized as Godot without
-requiring or writing a manifest. Other directories must have a valid Studio
-manifest to be listed. No existing project is moved or migrated. Discovery merges
-the existing HTTPS Projects API with narrow SSH-based project discovery because
-the existing API lists Godot projects only. An API/SSH discovery failure is
-visible and clears the active project/actions.
+Godot, Codex, Blender, Krita, Blockbench, LMMS and VSCodium offer
+verified rootless installation into the managed
+persistent tool directory. Background downloads use official publisher releases;
+missing trusted checksums stop installation. No remote scripts, sudo or system
+packages are used. Codex sign-in is a separate native terminal step with guidance
+in the wizard. All creative tools remain optional. AppImages are verified and stored
+without executing or extracting them; FUSE and desktop libraries may require manual
+setup. Missing publisher integrity data, unsupported architecture or changed layouts
+stop automation and offer official guidance and manual executable selection.
+Cancel installation or close the wizard to cancel. Existing versions are preserved.
+Embedded Codex shells receive session-only aliases for detected tools, including
+`godot` and `godot4`. Login shell profiles are disabled for these embedded sessions
+to retain the tool PATH. Headless Godot user data and caches stay under the selected
+project’s `.studio/headless/`; project imports still use `.godot/`. Tool directories,
+other projects and HOME receive no additional write access. Reconnect after changing
+tool setup. Shell profiles and saved Codex settings are unchanged.
 
-Asset categories:
+See [installation behavior, publisher trust, first-run steps and deferred work](docs/NATIVE-TOOL-INSTALLATION.md).
 
-| Category | Project-relative destination |
-| --- | --- |
-| Sprites | assets/sprites |
-| Textures | assets/textures |
-| 3D Models | assets/3d |
-| Music | assets/audio/music |
-| Sound Effects | assets/audio/sfx |
-| Other Assets | assets/other |
+VSCodium is an optional editor. Open Current Project passes the validated selected
+Project directory to the native editor. Future Codex change-review integration
+should show project-scoped diffs and explicit review decisions in the editor while
+retaining Studio conversation ownership and native Codex approval/sandbox settings;
+no extension, review bridge or automated edits are implemented here.
 
-The new GUI creation workflow initializes Git without creating a commit. It does
-not alter the existing `studio` scripts. Existing projects are not automatically
-rewritten or migrated. Project Documents can create only missing documentation,
-or view/edit one document with a server-side hash conflict check. Existing
-content is preserved unless the user explicitly saves an edit.
+Compatibility observations: Krita scripting availability depends on the native
+build and its Python/plugin environment; launching Krita does not verify scripting.
+LMMS scaling may vary with its Qt build and desktop display configuration. Neither
+Krita scripting nor LMMS scaling is changed in this pass.
 
-Codex New and Resume launch the existing Codex binary with the selected project
-as its working directory, workspace-write sandbox, on-request approval, and a
-configuration override asking it to read the four project documents, maintain
-concise progress/decisions, avoid automatic commits, and use available Godot
-validation for Godot projects. Missing tools/permissions must be reported, never bypassed through
-unrestricted Docker access. Before a session starts, missing project documents
-are created without overwriting existing documents. No Codex configuration file is edited. Terminal sessions are monitored independently,
-so a running Codex conversation does not block project file workflows.
+## Codex
 
-## Codex sessions and contextual actions
+The active Project is shown above the workspace. **New Conversation** starts local
+Codex in that Project; **Resume Conversation** lists its conversations with readable
+titles and dates. **All Projects** provides global discovery: selecting a known
+conversation switches to its owning Project before resuming. Unassigned conversations
+remain visible globally but cannot resume through Studio. Search and sort apply to
+loaded pages; use Load More for additional history.
 
-New Codex Session starts in the active project. Resume Session opens a GUI
-browser defaulting to that project, with All Projects, title/path/ID search,
-recent/oldest/name sorting and explicit Load More pagination. Search and sort
-apply to loaded pages (the dialog states this). Active, unarchived CLI, VS Code, app-server, exec and unknown-source sessions
-are queried. Titles, timestamps, IDs and cwd come from Codex; Studio does not invent or rewrite conversation metadata.
-Only an exact project directory or a reliably recognized child directory can
-associate a returned session with a Studio project. The project-scoped server
-query uses Codex's exact cwd filter; sessions started from child directories are
-visible via All Projects. Sessions outside recognized Studio projects are shown
-there but use Codex's All Projects picker for resumption.
+Resume checks current metadata and Project ownership again before opening a terminal.
+An unavailable metadata service blocks resume. The unrestricted Codex picker is not
+exposed by Studio. Codex runs with `--no-daemon -C PROJECT_DIRECTORY`, preserving the
+native launcher workaround and existing approval, sandbox and authentication settings.
+Metadata listing uses Codex app-server and never rewrites original histories.
 
-Metadata uses the documented `initialize` / `thread/list` stdio app-server
-protocol over the existing Tailscale SSH connection, including cursor pagination,
-updated-at ordering and `useStateDbOnly: true` to avoid rollout scan/repair.
-Studio never parses or edits Codex JSONL files or SQLite databases. A bounded
-short-lived process is terminated after each page; no service is installed or
-public endpoint opened. No thread/start, turn/start or thread/resume RPC is sent.
-Resume Selected Session runs the existing CLI `codex --cd PROJECT ... resume UUID`.
-The existing interactive conversation picker remains available independently and
-as a browser fallback, including `resume --all` for All Projects. History is kept.
+Verified associations are stored in `.studio-conversations.json`, bound to the UUID
+in `.studio-project-id`. These additive files support directory renames after discovery;
+keep them with the Project. Conflicting mappings, copied duplicate identities, unknown
+working directories and unrecognized projects remain unassigned. No inferred mapping
+between host/container paths is made. Discovery can add these small Studio metadata
+files to recognized writable Projects; existing project content is preserved.
 
-The remote Codex version must support `app-server --listen stdio://` and the
-listed protocol fields. Unsupported versions produce an actionable error; use
-the picker or separately update Codex through your existing administration flow.
-Studio does not install or update Codex. Protocol reference:
-https://developers.openai.com/codex/app-server (thread/list).
+**AI Memory** opens the Project's editable AI_MEMORY.md using conflict-checked saves.
+New Codex tasks explicitly receive its current text as initial project context, followed
+by the task when provided. This is user-maintained context, not automatic memory or
+transcript synchronization. Memory is limited to 24 KB when launching; existing
+conversations are resumed without injecting new memory into their history.
 
-Review Changes and Explain Project start a new interactive session with a fixed,
-visible-purpose prompt and project instructions. Fix Godot Errors and Validate
-Project do likewise for Godot projects only. Validation runs within Codex's
-existing approval/sandbox workflow; Studio does not claim a successful validation
-just because a terminal opened. Missing tools/permissions must be reported.
-No unrelated AI API, custom chat panel or automatic ChatGPT upload is added.
+See [the project-first architecture and prioritized native setup roadmap](docs/ADR-002-PROJECT-FIRST-CONVERSATIONS.md).
+The first-run Tools & Setup flow inventories persistent native installs and offers consented native tool installation. Downloads require explicit confirmation.
 
-## Assets and creative tools
+## Build and verification
 
-Import Assets uses a native multi-file picker and category selection. Transfers
-use the configured Tailscale SSH connection, show progress, and verify the
-resulting SHA-256. Limits are 100 files, 32 MiB/file and 256 MiB/batch. ASCII
-filenames may contain letters, digits, spaces, parentheses, dots, underscores
-and hyphens; executable/private filenames are rejected. Common image, audio,
-model, font and source asset formats are allowlisted, including `.kra`, `.blend`
-and `.bbmodel`. Filenames cannot specify directories.
+On Debian/Ubuntu, install build-essential, python3, python3-gi,
+gir1.2-gtk-3.0, desktop-file-utils and binutils. GTK display tests additionally
+need a working Broadway server and dbus-run-session.
 
-Existing filenames are checked before transfer. The GUI asks before replacing
-any conflicts, and the helper verifies that the confirmed server version has
-not changed. Writes use temporary files and atomic replacement; new files use
-an atomic no-clobber create. A failure reports how many files completed; the
-batch is not transactional. No silent overwrite or automatic Git commit occurs.
+```sh
+python3 -B -m unittest discover -s tests -v
+make -f Makefile.studio package
+python3 -B studio/validate_package.py
+python3 -B tests/run_gtk.py
+```
 
-Project Files and Browse Assets check and mount the selected remote directory
-through GVfs before opening it. The verified local GVfs/FUSE path is passed to
-the directory file manager, avoiding unsupported SFTP URI handlers. When that
-is unavailable, a native GTK browser opens the remote folder directly and can
-save selected files locally. `gvfs-backends` and `gvfs-fuse` are required package
-dependencies. Connection, authentication and launch failures produce a dialog. It uses the configured numeric Tailscale address and
-existing SSH trust/keys. File-manager authentication or trust prompts may still
-appear; no typed SSH commands are required.
+The local-first package version is 0.4.0. Packaging refuses to overwrite an
+existing 0.4.0 staging directory or artifact. Approved PNG artwork is copied
+unchanged. Runtime package dependencies contain no SSH, remote filesystem,
+container or streaming client. Optional native applications are not installed
+automatically. Legacy remote helpers and regression fixtures remain for historical
+compatibility but are not exposed by the normal interface.
 
-Launcher buttons display actual application names:
+Tests distinguish local engine/command checks from real GUI and application
+execution. A successful mocked launch does not establish that Godot, Blender or
+Codex ran on the host. No Studio packaging or workflow changes OptiPlex NOW,
+Wolf services or infrastructure.
 
-| Button | Existing service or desktop action |
-| --- | --- |
-| UltraBox | synth.monumentrisk.com |
-| AudioMass | recorder.monumentrisk.com |
-| openDAW | daw.monumentrisk.com |
-| Piskel | pixel.monumentrisk.com |
-| Onionskyn | SSH-forwarded existing loopback service 18771 |
-| CozyClay | SSH-forwarded existing loopback service 18769/app/ |
-| Blockbench | SSH-forwarded existing loopback service 18770 |
-| Blender | org.blender.Blender in the running Wolf Studio Desktop |
-| Krita | org.kde.krita in the running Wolf Studio Desktop |
+### Embedded Codex conversations
 
-The old Models / 3D Workshop entry is consolidated under Blockbench. The
-models/previs/animate HTTPS virtual hosts currently fail TLS and have no route
-in the active Caddy configuration. Studio does not disable certificate checks
-or edit Caddy. Instead it creates fixed, temporary SSH loopback forwards on
-127.0.0.1:28770, :28769 and :28771, respectively, to the existing static services.
-Traffic to the OptiPlex is encrypted by SSH over Tailscale; HTTP exists only on
-the loopback ends. SSH forwarding permission and those existing services must be
-available. If a local forward cannot bind or the service is unreachable, the
-GUI reports an error rather than opening an unrelated port. Forwards close with
-Studio and are reused while it runs. Switching servers replaces its own forward.
+AI Workspace now opens native Codex conversations inside its output panel. Select
+an existing Project, choose New Conversation or Resume Conversation, and send a
+message. Run and task presets create a thread and send the selected prompt.
+New threads receive that Project's AI_MEMORY.md; existing threads retain their
+history. Interrupt stops the current turn; Reconnect re-verifies ownership and
+reloads the thread without replaying messages. Review history before retrying a
+message after connection failure.
 
-Working HTTPS tools still open in a separate Chromium/Chrome/Brave profile with
-Tailscale host resolver rules. HTTPS hostname verification remains enabled.
-Browser documents are origin/profile-specific; old browser work is not migrated
-by this release. Export existing work before switching origins. Other external
-assets or optional remote tool backends may require their own connectivity.
-CozyClay's optional motion/AI backends remain absent; this release does not add
-them. Browser editor export/import round trips still require live verification.
+Action requests offer Deny or Approve once, with Deny as the default. The client
+uses a read-only sandbox and Codex's untrusted policy. Unsupported interactive
+requests are rejected. External Codex Terminal remains available in More actions
+and in the conversation panel. Unassigned historical conversations require a
+separate future recovery flow. No new runtime dependencies were added.
 
-Selecting a creative tool shows the active project and clear asset destinations.
-Export/download from the browser, then Import Assets. Browser applications do
-**not** directly save into the remote project directory. For Krita/Blender inside
-the existing desktop, use the mapped `/projects/Godot/PROJECT/assets/...` path
-in their own Save dialogs; native save/export round trips are not yet live-tested.
+This source milestone is fixture-tested; authenticated native streaming and the
+1024x768 GTK layout still require workstation validation. See ADR-002 in `docs/`
+for exact environment failures and remaining acceptance checks.
 
-## Share Project Context
+## Release integrity
 
-Select project → Share Project Context → review files and optional images → Export
-ZIP locally → attach the ZIP to ChatGPT manually. Copy ChatGPT Brief supplies the
-project name, branch, commit, dirty state and snapshot review instructions. Open
-ChatGPT uses the user's existing browser. There is no automatic upload, account
-link, chat panel, conversation synchronization or AI API dependency.
-
-The allowlist includes Godot configuration, GDScript, text scenes/resources,
-shaders, project documentation, project data files and optional PNG/JPEG/WebP
-previews. Native asset binaries and large media are inventoried rather than
-attached. Limits: 512 KiB/text file, 2 MiB/image, 24 MiB selected content,
-1,500 eligible files, 10,000 visited entries and 12 directory levels. Images
-retain their original metadata; review before sharing.
-
-The review dialog supports per-file selection and native text/image previews.
-It does not upload anything. ZIP contains `OVERVIEW.md`, `CHATGPT-BRIEF.md`,
-`CHANGES.diff` and the selected files under the project name. Sources are current
-working-tree contents, including staged, unstaged and untracked work. Relevant
-reviewed text-file deletions are represented in the diff, not resurrected as
-files. Diffs compare only reviewed selected text paths against HEAD. Sensitive
-or oversized old versions/diffs are omitted with an explanation. New repositories
-without commits still include their current files and metadata.
-
-.git internals, .godot cache, hidden files, compiled/export directories,
-credentials/private filenames, symlinks, hard links and nonallowlisted contents
-are excluded. Root-level unrelated text files are not exportable. Conservative
-secret scanning is performed on text, Git metadata and diff contents. It is
-not a guarantee against every secret: review the selected files and final ZIP
-before sharing. Files that change after review require another review. Project
-access is anchored to directory descriptors with O_NOFOLLOW. Git metadata is
-read only for ordinary project-local .git directories; linked/external gitdirs
-are intentionally unsupported. Size-limited sources can still omit larger game
-assets; the overview lists inventory-only entries and exclusions.
-
-## Godot, Krita, Blender and Moonlight
-
-The bundled `desktop_helper.py` supports only Godot, Krita and Blender. It uses
-existing server-user permissions and exactly one already-running
-`WolfStudioDesktop_*` container. It never starts/stops/restarts containers,
-creates profiles, installs software, grants Docker permissions or accepts an
-arbitrary executable. The existing server-side `~/.local/bin/studio edit PROJECT` is not modified.
-The client uses its fixed Godot Flatpak/editor arguments after checking for an
-existing editor for that exact project. It discovers the running desktop
-Wayland socket rather than hardcoding wayland-2 (the inspected desktop uses
-wayland-1). Godot, Blender and Krita share this environment resolution and up
-to 30 seconds of startup process confirmation; a connected desktop alone is
-not reported as successful application startup. A fixed Python/X11 focus request matches the editor by its exact
-project path and in-container PID, then raises its window inside the connected stream.
-It needs no wmctrl/xdotool installation inside Wolf. If activation is unavailable,
-Studio reports that the editor is already open instead of launching a replacement.
-Per-project locks and pending-launch markers prevent repeated helper
-launches; ambiguous launches require waiting two minutes before a retry. An
-external launcher not using this helper can still bypass its duplicate lock.
-Krita/Blender use fixed Flatpak IDs and process confirmation. They connect and
-wait for the desktop first, can launch with no project selected, and use the
-selected project directory when available; they do not require project.godot.
-Their existing Flatpaks must be installed in the Wolf desktop. Studio does not
-install them or modify Wolf.
-
-Moonlight detection follows NOW's AppImage → native → Flatpak order and launches
-`stream CONFIGURED_TAILSCALE_IP CONFIGURED_APP_TITLE` with no pairing, decoder,
-bitrate, resolution or profile overrides. A matching existing stream is reused
-and brought forward using wmctrl when supported. On Wayland/no window activation,
-Studio reports the existing stream rather than launching a duplicate. Missing
-clients, failed processes and later nonzero stream exits are visible in the GUI.
-
-The verified default application is **OptiPlex Studio Desktop**. Open Godot
-connects directly to that application on the configured Tailscale IP, waits for
-exactly one Wolf Studio Desktop container, a ready X11 window manager and the
-selected Godot project mount, then opens/focuses the editor. The readiness wait
-has a 90-second deadline with checks about every two seconds (individual SSH
-requests have a 25-second timeout), shows
-progress/reasons, and never launches Godot after a detected stream failure or
-readiness timeout. Blank settings and the obsolete `Studio Desktop`
-placeholder use this verified title; explicit custom titles remain supported for
-other servers. Steam is not substituted for the desktop.
-
-**Open Studio Desktop** is a separate main-window and tray action. It streams
-without requiring project selection, querying the Projects API, running the
-project helper, or launching Godot. If no desktop session/container is running,
-Open Godot now connects and waits automatically. The separate Moonlight button
-still opens the existing client's general UI.
-
-AppImage launches, including the general Moonlight UI, receive the process-local
-`APPIMAGE_EXTRACT_AND_RUN=1` environment variable, matching the user-verified
-Moonlight 6.2.0 command. Detection paths, pairing and playback preferences are
-unchanged. Native and Flatpak installations continue to use their existing
-launch commands. No global environment, Moonlight preferences or Wolf settings
-are written by this change.
-
-## Connection and server prerequisites
-
-Set the numeric OptiPlex Tailscale IPv4 address in Settings (100.64.0.0/10), SSH
-user and optionally a Moonlight AppImage path or custom Wolf desktop title.
-Leaving the title blank uses OptiPlex Studio Desktop.
-Existing Tailscale connectivity, SSH keys and trusted known_hosts entries are
-required. Unknown SSH host keys are never accepted automatically. Conventional
-/home/USER or /root paths are used for CLI and SFTP access; nonstandard home
-layouts are not supported by this client version.
-
-The Projects API connects directly to the configured IP on 443, retaining
-studio.monumentrisk.com for Host, TLS SNI and certificate validation. No public
-DNS, proxy, insecure certificate override or redirect fallback is used. API
-failures clear selection and disable project-dependent main/tray actions.
-
-`project_helper.py` and `desktop_helper.py` are separate, narrow components
-bundled in the client package. At runtime the fixed source is passed to the
-server's `/usr/bin/python3 -c` over SSH; JSON stdin selects only supported
-operations. No helper is installed on the server and no service deployment is
-needed. Remote prerequisites: Python 3; Git for history/diffs; existing project
-root; SFTP subsystem for graphical browsing; authorized SSH forwarding for the
-three static tools; existing Studio CLI and running desktop with the expected
-project mount and Flatpaks for desktop actions. The focus helper uses existing
-Python 3 and libX11 inside the desktop; if unavailable it falls back to reusing
-the editor without automatic focus. Permission failures are reported;
-Studio does not alter policy or add Docker group/sudo privileges.
-
-No API filesystem exposure, execution endpoint, unrestricted Docker API or
-server configuration changes are introduced. This work does not modify NOW,
-existing games, Wolf, Caddy, Tailscale or the installed Studio application.
-
-## Validation and remaining live checks
-
-The current 106 automated tests cover file transfer framing/progress, conflict confirmation,
-atomic writes, traversal/symlink/hard-link rejection, documentation preservation,
-current/staged/untracked/deleted snapshots, secret/diff exclusions, size limits,
-ZIP selection/integrity, GUI actions, project persistence, Codex command options,
-Moonlight arguments/failures, desktop reuse and fixed creative SSH routing.
-Tests use temporary local projects and mocked remote desktop/SSH operations.
-
-The native GTK workflow driver uses a private Broadway display and disposable
-projects to exercise remembered selection, real snapshot review/save dialogs,
-ZIP creation, documentation editing, project isolation and window restoration.
-Broadway emits the previously observed tray scale-factor warnings; it does not
-validate a real SNI/XEmbed panel. Rendered UI/review screenshots are saved in `build/qa/project-workspace.png`
-and `build/qa/snapshot-review.png`. The launcher compiled with GCC and the
-unit/syntax checks passed. The private GTK workflow and lifecycle smoke tests
-passed; the smoke test uses its own fresh Broadway server.
-
-Read-only checks confirmed the working HTTPS apps over Tailscale and the existing
-Blockbench, CozyClay and Onionskyn pages through real temporary Tailscale SSH
-forwards. Those test forwards were closed afterward. A read-only live Tailscale SFTP mount and native GTK folder display passed
-against this Studio source repository. Real remote imports,
-actual browser rendering/export round trips, real Codex conversations,
-Krita/Blender launches, duplicate-editor behavior in the actual Wolf session,
-Moonlight streaming/focus and real tray panels require live testing after
-operator installation. Direct Wolf desktop streaming has been verified separately
-by the user; this build does not reconfigure it.
-No package is installed, published or committed by the build.
-
-Version 0.3.0 adds project template/discovery checks, multiple projects/sessions,
-real subprocess stdio metadata framing, source injection, UUID/prompt quoting,
-GUI session search/filter/resume routing and native template selection. It also
-includes the cold-desktop Godot startup/source-order fixes and explicit
-GLib/GDK/AppIndicator/XEmbed/desktop-file identity. Real tray panels, remote
-Codex metadata compatibility, terminal resumption, native save/export and cold
-Wolf/Moonlight Godot startup still need live verification after installation.
-The supplied approved PNGs are included unchanged. No server deployment
-is required: session/project/desktop helpers are bundled and sent over SSH.
-
-## Corrections within v0.3.0
-
-The existing release and tag are retained. Corrections are committed directly
-to main; after package and packaged-GUI validation the workflow uses
-`gh release upload v0.3.0 ... --clobber` to replace the Debian installer and
-checksum. Release notes identify the asset source commit; the original tag is
-not moved. No other branch/repository/release version is created.
-
-The MacBook installation was not accessible for comparison or GUI testing.
-The previously published package was compared with repository sources, and
-native GUI checks now import modules extracted from the rebuilt Debian package.
-These verify real widget visibility/clicks, folder browsing and local copying,
-plus project-scoped AI action and session selection routing with fixture backends.
-No real Codex session was started or modified. Read-only desktop probes confirmed
-Godot/Blender/Krita installations, versions, project mounts and display readiness;
-their live interactive windows and Moonlight focus still need MacBook testing.
-
-Quit Studio from its tray before reinstalling this corrected same-version
-package, then relaunch it; single-instance activation otherwise raises the old
-running process. Use your package manager's reinstall option if it reports
-0.3.0 already installed. Existing settings/projects/conversations are retained.
+Official GitHub packages are built from version tags using the validated CI release workflow. The native installer and SHA-256 sidecar are provided through the repository’s latest Release page. See `docs/RELEASING.md`.

@@ -1,8 +1,8 @@
 # ADR-002 — Upstream-first integrated creative toolchain
 
-**Status:** Proposed long-term product direction (not an implementation authorization).  
-**Date:** 2026-10-19  
-**Scope:** OptiPlex Studio (distinct from OptiPlex NOW).  
+**Status:** Proposed long-term product direction (not an implementation authorization).
+**Date:** 2026-10-19
+**Scope:** OptiPlex Studio (distinct from OptiPlex NOW).
 **Related:** [ADR-001: shared local-first runtime](ADR-001-LOCAL-FIRST-SHARED-STUDIO-RUNTIME.md), [frozen Studio v1.0 requirements](https://github.com/SteezyMode/OptiplexStudio/issues/3), [current status](CURRENT-STATUS.md), [NOW integration strategy](https://github.com/SteezyMode/OptiplexNow/blob/main/docs/UPSTREAM-FIRST-WOLF-INTEGRATION.md).
 
 ## Product hypothesis

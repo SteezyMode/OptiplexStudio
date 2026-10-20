@@ -1,11 +1,10 @@
 """Read-only session listing through Codex's documented app-server protocol.
 
-Bundled into the SSH helper; never reads or edits rollout JSONL/SQLite files.
+Uses additive Studio associations; never reads or edits rollout JSONL/SQLite files.
 """
 def list_codex_sessions(base, project, request):
     import json
     import os
-    from pathlib import Path, PurePosixPath
     import selectors
     import subprocess
     import tempfile
@@ -20,7 +19,7 @@ def list_codex_sessions(base, project, request):
         raise ValueError('Invalid session scope.')
     deadline = time.monotonic() + 35
     with tempfile.TemporaryFile() as errors:
-        process = subprocess.Popen([str(Path.home() / '.local/bin/codex'), 'app-server', '--listen', 'stdio://'],
+        process = subprocess.Popen([__import__('native_tools').discover(request.get('_config', {}), 'codex'), 'app-server', '--listen', 'stdio://'],
                                    stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=errors)
         selector = selectors.DefaultSelector()
         selector.register(process.stdout, selectors.EVENT_READ)
@@ -49,7 +48,7 @@ def list_codex_sessions(base, project, request):
                 if selector.select(min(1, max(0, deadline - time.monotonic()))):
                     data = os.read(process.stdout.fileno(), 65536)
                     if not data:
-                        raise RuntimeError('Codex session listing stopped. Check the remote Codex version; use its conversation picker as a fallback.')
+                        raise RuntimeError('Codex session listing stopped. Check the local Codex version; use its conversation picker as a fallback.')
                     buffer.extend(data)
             raise TimeoutError('Codex session listing timed out. You can still use the Codex conversation picker.')
         try:
@@ -58,8 +57,6 @@ def list_codex_sessions(base, project, request):
             send({'method': 'initialized', 'params': {}})
             params = {'limit': 100, 'cursor': cursor, 'sortKey': 'updated_at', 'useStateDbOnly': True,
                       'sourceKinds': ['cli', 'vscode', 'appServer', 'exec', 'unknown']}
-            if not all_projects:
-                params['cwd'] = str(base / project)
             send({'id': 2, 'method': 'thread/list', 'params': params})
             page = response(2)
             rows = []
@@ -69,21 +66,13 @@ def list_codex_sessions(base, project, request):
                 except (ValueError, KeyError, TypeError, AttributeError):
                     continue
                 cwd = item.get('cwd')
-                # Only associate by a real exact cwd or a directory below this project.
-                association = None
-                if isinstance(cwd, str):
-                    path = PurePosixPath(cwd)
-                    try:
-                        parts = path.relative_to(PurePosixPath(base)).parts
-                        if parts and all(p not in ('.', '..') for p in parts):
-                            association = parts[0]
-                    except ValueError:
-                        pass
-                if not all_projects and association != project:
-                    continue
-                rows.append({'id': identifier, 'title': str(item.get('name') or item.get('preview') or identifier)[:500],
-                             'cwd': cwd or '', 'project': association,
+                rows.append({'id': identifier, 'title': ' '.join(str(item.get('name') or item.get('preview') or 'Untitled conversation').split())[:160] or 'Untitled conversation',
+                             'cwd': cwd or '', 'project': None,
                              'createdAt': item.get('createdAt', 0), 'updatedAt': item.get('updatedAt', 0)})
+            from conversation_store import associate
+            rows = associate(base, rows)
+            if not all_projects:
+                rows = [row for row in rows if row['project'] == project]
             return {'sessions': rows, 'nextCursor': page.get('nextCursor')}
         finally:
             selector.close()

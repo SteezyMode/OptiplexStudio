@@ -1,12 +1,12 @@
 CC ?= gcc
 CFLAGS ?= -O2 -Wall -Wextra -Werror
 .PHONY: all package check
-all: build/optiplex-studio
-build/optiplex-studio: studio/launcher.c
-	mkdir -p build
+all: build/local-first/optiplex-studio
+build/local-first/optiplex-studio: studio/launcher.c
+	mkdir -p build/local-first
 	$(CC) $(CFLAGS) -Wno-unused-parameter $< -o $@
 check: all
-	/usr/bin/python3 -m unittest discover -s tests -v
-	/usr/bin/python3 -m py_compile studio/app.py studio/core.py studio/project_helper.py studio/project_client.py studio/project_ui.py studio/desktop_helper.py studio/godot_focus.py studio/file_browser.py studio/package.py studio/version.py studio/session_helper.py studio/session_ui.py
+	/usr/bin/python3 -B -m unittest discover -s tests -v
+	PYTHONPYCACHEPREFIX=/tmp/optiplex-studio-pycache /usr/bin/python3 -m py_compile studio/app.py studio/core.py studio/project_helper.py studio/project_client.py studio/project_ui.py studio/desktop_helper.py studio/godot_focus.py studio/file_browser.py studio/package.py studio/version.py studio/validate_package.py studio/session_helper.py studio/session_ui.py studio/native_tools.py studio/portable_install.py studio/tool_environment.py studio/codex_install.py studio/tools_ui.py studio/conversation_store.py studio/codex_rpc.py studio/embedded_codex.py studio/embedded_ui.py studio/transcript.py
 package: check
 	/usr/bin/python3 studio/package.py

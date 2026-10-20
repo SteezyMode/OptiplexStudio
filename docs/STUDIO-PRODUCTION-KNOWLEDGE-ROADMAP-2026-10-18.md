@@ -41,3 +41,39 @@ Gradually deliver reusable, project-independent capabilities along the lines of 
 Return after Patient V2 review. Goal: a persistent **normal window within Wolf**, primary interface for project-scoped and Art Director Codex sessions; new/resume, status, conversation history and working GUI. Future direction: optional side-by-side ChatGPT companion and explicit context handoff, without assuming ChatGPT web conversations are directly API-accessible. Preserve existing services and CLI.
 
 Diagnostics: image `optiplex-studio-desktop:v5`; Wolf shortcut `/home/retro/Desktop/optiplex-ai-workspace.desktop` points at `/usr/bin/python3 /opt/optiplex-studio/wolf_ai_workspace.py`, but that file and directory do not exist in the active container. Searched StudioProjects and relevant local Git history with no recovered copy. Separate GTK3 app source exists in `~/StudioProjects/optiplex-studio/studio/` and corrected v0.3.0 .deb; its AI Workspace is a launcher and session browser rather than native chat. Host `~/.local/bin/studio` CLI is separate. Copied GTK source to persistent Wolf `/home/retro/.local/optiplex-studio` and started GUI successfully, but it appeared full-screen/desktop-obscuring, not the desired interface. Do not call this fixed or overwrite the shortcut blindly. Inspect installation architecture, fix missing entry point or intentionally consolidate apps, implement windowed Codex conversation interface, verify launcher behavior and persistence.
+
+## Native embedded conversation milestone (2026-10-19)
+Source implementation now includes an App Server conversation panel in GTK3 AI
+Workspace: persistent new/resume, streamed text and tool progress, interrupt,
+explicit default-deny action approval, reconnect and external terminal fallback.
+Project ownership and AI_MEMORY.md behavior are preserved. See
+[ADR-002 validation and remaining work](ADR-002-PROJECT-FIRST-CONVERSATIONS.md#embedded-app-server-milestone-2026-10-19).
+177 unit tests run: 176 pass, one skipped (Unix sockets prohibited); native live inference and display-backed GTK
+acceptance remain unverified because App Server startup hit a read-only-home error
+and GTK3 broadwayd is missing. No installations or live services were changed.
+Next separate milestone: explicit recovery of historical unassigned sessions;
+no bulk assignment or automatic recovery is implemented. The Wolf launcher issue
+above remains open and is not resolved by these source changes.
+
+### Embedded Workspace UI refinement (2026-10-19; no new milestone)
+User live testing has confirmed new conversations, streaming, project awareness,
+and resume across restarts. This focused source cleanup preserves that backend.
+The AI conversation page now avoids an outer scrolling viewport, with a GTK3
+vertical divider between transcript and multiline composer; Send and other actions
+stay below the divider. Ctrl+Enter sends, while Enter adds a paragraph. Transcript
+roles, literal user text, agent Markdown and fenced code use shared presentation
+for restored and live messages. Command start/output/completion update one item,
+with compact status/exit information and an abbreviated output preview (eight
+lines/1,600 characters); unknown protocol items are omitted from the transcript.
+Literal, case-insensitive conversation search highlights matches and wraps through
+Previous/Next; the current match stays selected when streamed text redraws.
+
+Validation: 190 tests run, 186 passed, four skipped (one Unix-socket restriction,
+three missing-Git checks); Python compilation passed. Added focused regressions
+for out-of-order command activity, compact tool output, Markdown fences and
+paragraphs, restored/live parity, split sizing policy and multiline send limits.
+Updated the display-backed fixture for the composer and minimum allocations.
+GTK3 `Gtk.init_check()` cannot open a display here, and GTK3 `broadwayd` is absent,
+so visual acceptance at 1024x768 remains to be checked on the workstation. No new
+dependencies, installations, service changes, commits, pushes or merges. Ownership,
+AI_MEMORY.md, authentication, approvals, sandbox and tool integrations unchanged.
