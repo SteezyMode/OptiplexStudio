@@ -1,6 +1,6 @@
 # OptiPlex Studio — current status
 
-Updated: 2026-10-20. This status describes the v0.4.10 local-first source on the
+Updated: 2026-10-20. This status describes the v0.4.11 local-first source on the
 merged `main` branch. This source has not yet been published as a new release.
 
 ## Implemented in source
@@ -24,7 +24,7 @@ services. Wolf can provide graphical access to the workstation independently.
 ## Verification state
 
 For this local-first source, 163 unit tests pass. `make -f Makefile.studio package` builds the
-0.4.10 amd64 Debian package, and `studio/validate_package.py` verifies its exact
+0.4.11 amd64 Debian package, and `studio/validate_package.py` verifies its exact
 payload, desktop entry and dependencies. All four native GTK scenarios pass against
 source and the unpacked package payload, including project workflows, folder browsing,
 conversation layout and application launch. The installed package was not changed.
