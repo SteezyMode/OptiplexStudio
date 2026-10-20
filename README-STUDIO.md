@@ -20,7 +20,7 @@ Workspace and project directories must not be symlinks.
 Settings remain in `$XDG_CONFIG_HOME/optiplex-studio/config.json`, defaulting to
 `~/.config/optiplex-studio/config.json`. The `projects_dir` setting selects the
 workspace. Existing settings and remembered project selection are retained;
-legacy connection fields no longer control normal operation.
+older connection fields are ignored and retained in place; Studio neither reads nor rewrites them as part of local operation.
 
 Studio never moves, converts or deletes existing projects. To use an older local
 layout such as `~/StudioProjects/Godot`, select that directory as the workspace.
@@ -143,12 +143,11 @@ python3 -B studio/validate_package.py
 python3 -B tests/run_gtk.py
 ```
 
-The local-first package version is 0.4.0. Packaging refuses to overwrite an
-existing 0.4.0 staging directory or artifact. Approved PNG artwork is copied
-unchanged. Runtime package dependencies contain no SSH, remote filesystem,
+The package version is 0.4.10. Packaging refuses to overwrite an
+existing staging directory or artifact. Approved PNG artwork is copied
+unchanged. Runtime package dependencies contain no SSH client, remote filesystem backend,
 container or streaming client. Optional native applications are not installed
-automatically. Legacy remote helpers and regression fixtures remain for historical
-compatibility but are not exposed by the normal interface.
+automatically. Studio does not include a hosted browser-service catalog.
 
 Tests distinguish local engine/command checks from real GUI and application
 execution. A successful mocked launch does not establish that Godot, Blender or
