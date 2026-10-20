@@ -434,20 +434,36 @@ def wait_for_studio_desktop(config, project, on_progress=None, stream_errors=Non
 
 
 def run_action(config, action, name, on_started=None, on_error=None, on_progress=None, session_id=None, prompt=None, all_sessions=False):
-    cmd = ssh_args(config, action, name, action in ('code', 'resume'))
+    local = config.get('mode') == 'local'
+    if local:
+        import local_workspace
+        if action == 'edit':
+            return local_workspace.start_godot(name)
+        cmd = local_workspace.command(action, name)
+    else:
+        cmd = ssh_args(config, action, name, action in ('code', 'resume'))
     if action in ('code', 'resume'):
         if session_id is not None:
             import uuid
             if action != 'resume':
                 raise ValueError('Session ID is only valid for resume.')
             session_id = str(uuid.UUID(session_id))
-            cmd[-1] += ' ' + shlex.quote(session_id)
+            if local:
+                cmd.append(session_id)
+            else:
+                cmd[-1] += ' ' + shlex.quote(session_id)
         elif all_sessions and action == 'resume':
-            cmd[-1] += ' --all'
+            if local:
+                cmd.append('--all')
+            else:
+                cmd[-1] += ' --all'
         if prompt is not None:
             if action != 'code' or prompt not in CODEX_TASKS.values():
                 raise ValueError('Unsupported Codex task.')
-            cmd[-1] += ' ' + shlex.quote(prompt)
+            if local:
+                cmd.append(prompt)
+            else:
+                cmd[-1] += ' ' + shlex.quote(prompt)
         # Terminal emulators may hide their child's exit code. A private file
         # carries the SSH result independently of emulator exit-code semantics.
         with tempfile.TemporaryDirectory(prefix='optiplex-studio-') as directory:
@@ -462,10 +478,13 @@ def run_action(config, action, name, on_started=None, on_error=None, on_progress
                     on_started()
                 stdout, stderr = process.communicate()
             if not status.exists():
-                raise RuntimeError('Terminal failed to run SSH/Codex: ' +
+                raise RuntimeError(('Terminal failed to run Codex locally: ' if local else 'Terminal failed to run SSH/Codex: ') +
                                    (stderr or stdout or 'No remote exit status was received.')[-3000:])
             result = int(status.read_text())
             if result:
+                if local:
+                    raise RuntimeError(f'Local Codex exited with code {result}. '
+                                       'Check authentication and project permissions.')
                 raise RuntimeError(f'SSH/Codex launch or session failed (exit {result}). '
                                    'Check the Tailscale connection, trusted SSH host key, SSH key and remote Codex installation.')
             return 'Codex conversation closed.'
