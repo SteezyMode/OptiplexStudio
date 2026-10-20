@@ -51,7 +51,7 @@ class Safety(unittest.TestCase):
 
     def test_terminal_adapters(self):
         for terminal, flags in [('gnome-terminal', ['--wait', '--']), ('konsole', ['--nofork', '-e']),
-                                ('xfce4-terminal', ['--disable-server', '-x']), ('xterm', ['-e'])]:
+                                ('xfce4-terminal', ['--disable-server', '-x']), ('xterm', ['-e']), ('cosmic-term', ['--'])]:
             with self.subTest(terminal=terminal), patch('shutil.which', side_effect=lambda p: p if p == terminal else None):
                 self.assertEqual(core.terminal_args(['ssh', 'host']), [terminal] + flags + ['ssh', 'host'])
         with patch('shutil.which', return_value=None):
@@ -62,8 +62,7 @@ class Safety(unittest.TestCase):
         with patch('shutil.which', side_effect=lambda p: '/usr/bin/x-terminal-emulator' if p == 'x-terminal-emulator' else None), patch('pathlib.Path.resolve', return_value=Path('/usr/bin/konsole')):
             self.assertEqual(core.terminal_args(['ssh']), ['/usr/bin/x-terminal-emulator', '--nofork', '-e', 'ssh'])
         with patch('shutil.which', side_effect=lambda p: '/usr/bin/x-terminal-emulator' if p == 'x-terminal-emulator' else None), patch('pathlib.Path.resolve', return_value=Path('/usr/bin/cosmic-term')):
-            with self.assertRaisesRegex(RuntimeError, 'supported terminal'):
-                core.terminal_args(['ssh'])
+            self.assertEqual(core.terminal_args(['ssh']), ['/usr/bin/x-terminal-emulator', '--', 'ssh'])
 
     def test_codex_exit_status_handoff(self):
         # Execute the actual wrapper without a terminal or remote connection.
