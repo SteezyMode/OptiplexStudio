@@ -37,15 +37,10 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
         self.sni = None
         self.tray = None
         self.busy = False
-        self.config = {'mode': 'local', 'host': '', 'user': 'optiplex', 'moonlight_appimage': '', 'moonlight_app': ''}
-        try:
-            saved = json.loads(CONFIG.read_text())
-            if isinstance(saved, dict):
-                self.config.update(saved)
-                if 'mode' not in saved and saved.get('host'):
-                    self.config['mode'] = 'remote'  # Preserve old remote configurations.
-        except (OSError, ValueError, TypeError):
-            pass
+        # Studio always operates on the workstation where it is installed.
+        # The old remote-client settings file is deliberately left untouched,
+        # so older published clients are unaffected by development builds.
+        self.config = {'mode': 'local'}
 
     def label(self, text, name='section'):
         label = Gtk.Label(label=text, xalign=0)
@@ -141,18 +136,10 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
              'godot' if name in ('Fix Godot Errors', 'Validate Project') else 'project') for name in core.CODEX_TASKS])
         ai_page.pack_start(self.label('Codex uses the active project directory and AGENTS.md. Export and review Project Context, then attach it to ChatGPT manually.', 'helper'), False, False, 0)
         tools = page('Creative Tools')
-        self.desktop_button = self.button('Open Studio Desktop', self.open_studio_desktop, 'power')
-        tools.pack_start(self.desktop_button, False, False, 0)
-        self.connection_buttons.append(self.desktop_button)
-        grid(tools, [('Godot', lambda _: self.action('edit'), 'godot'),
-                     ('Blender', lambda _: self.open_desktop_application('blender'), None),
-                     ('Krita', lambda _: self.open_desktop_application('krita'), None),
-                     ('ChatGPT in Wolf', lambda _: self.open_desktop_application('chatgpt'), None),
-                     ('Moonlight', self.open_moonlight, None)] + [
-                     (name, lambda _, n=name, u=url: self.creative_tool(n, u), None) for name, url in core.APPS])
-        tools.pack_start(self.label('Desktop applications use the existing Wolf session. Godot opens or focuses the selected Godot project. Blender and Krita can also launch independently.', 'helper'), False, False, 0)
+        grid(tools, [('Godot', lambda _: self.action('edit'), 'godot')])
+        tools.pack_start(self.label('Godot opens the selected project on this computer. Native Blender and LMMS adapters are still being validated.', 'helper'), False, False, 0)
         self.transfer_progress = Gtk.ProgressBar(show_text=True)
-        self.transfer_progress.set_text('Project transfers use Tailscale SSH')
+        self.transfer_progress.set_text('Local project operations')
         body.pack_start(self.transfer_progress, False, False, 0)
         self.status = self.label('Ready', 'footer')
         self.status.set_selectable(True)
@@ -163,8 +150,6 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
         self.initialize_tray()
         self.window.show_all()
         self.refresh()
-        if self.config.get('mode') == 'remote' and not self.config.get('host'):
-            GLib.idle_add(self.settings, None)
 
     def open_url(self, url):
         config = dict(self.config)
@@ -382,52 +367,14 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
             dialog.destroy()
 
     def settings(self, _):
-        dialog = Gtk.Dialog(title='Studio workspace', transient_for=self.window, modal=True)
-        dialog.add_buttons('CANCEL', Gtk.ResponseType.CANCEL, 'SAVE', Gtk.ResponseType.OK)
-        box = dialog.get_content_area()
-        box.set_border_width(18)
-        box.pack_start(self.label('Where do you want Studio to work?', 'section'), False, False, 5)
-        choice = Gtk.ComboBoxText()
-        choice.append('local', 'This computer')
-        choice.append('remote', 'Remote OptiPlex (Tailscale / Wolf)')
-        choice.set_active_id(self.config.get('mode', 'local'))
-        box.pack_start(choice, False, False, 6)
-        remote_fields = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        entries = {}
-        for key, title in [('host', 'Tailscale IPv4 address'), ('user', 'SSH user'),
-                           ('moonlight_appimage', 'Moonlight AppImage (optional)'),
-                           ('moonlight_app', 'Wolf desktop title (optional)')]:
-            remote_fields.pack_start(self.label(title, 'helper'), False, False, 0)
-            entries[key] = Gtk.Entry(text=str(self.config.get(key, '')))
-            remote_fields.pack_start(entries[key], False, False, 0)
-        box.pack_start(remote_fields, False, False, 4)
-        box.pack_start(self.label('Local mode uses projects and Codex on this computer. Remote mode requires existing SSH pairing.', 'helper'), False, False, 6)
-        dialog.show_all()
-        def show_remote(*_):
-            remote_fields.set_visible(choice.get_active_id() == 'remote')
-        choice.connect('changed', show_remote)
-        show_remote()
-        while dialog.run() == Gtk.ResponseType.OK:
-            candidate = dict(self.config)
-            candidate['mode'] = choice.get_active_id()
-            candidate.update({k: e.get_text().strip() for k, e in entries.items()})
-            try:
-                if candidate['mode'] == 'remote':
-                    core.ssh_args(candidate, 'edit', 'validation')
-                elif candidate['mode'] != 'local':
-                    raise ValueError('Select a supported workspace mode.')
-                CONFIG.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-                temp = CONFIG.with_suffix('.tmp')
-                fd = os.open(temp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o600)
-                with os.fdopen(fd, 'w') as out:
-                    json.dump(candidate, out)
-                temp.replace(CONFIG)
-                self.config = candidate
-                self.status.set_text('Studio workspace settings saved.')
-                self.refresh()
-                break
-            except (ValueError, OSError) as exc:
-                self.status.set_text(str(exc))
+        dialog = Gtk.MessageDialog(transient_for=self.window, modal=True,
+                                   message_type=Gtk.MessageType.INFO,
+                                   buttons=Gtk.ButtonsType.CLOSE,
+                                   text='Studio uses this computer.')
+        dialog.format_secondary_text(
+            'Projects: ' + str(local_workspace.root()) +
+            '\\nCodex and Godot launch locally. Remote desktop access is managed separately by OptiPlex NOW.')
+        dialog.run()
         dialog.destroy()
 
     def restore(self):
@@ -458,7 +405,7 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
     def initialize_tray(self):
         self.menu = Gtk.Menu()
         self.tray_project_items = []
-        for text, callback in [('Open OptiPlex Studio', self.restore), ('Open Studio Desktop', lambda: (self.restore(), self.open_studio_desktop())), ('New Codex conversation', lambda: (self.restore(), self.action('code'))), ('Resume conversation', lambda: (self.restore(), self.session_browser())), ('Studio workspace', lambda: self.open_url('https://studio.monumentrisk.com')), ('Settings', lambda: (self.restore(), self.settings(None))), ('Quit', self.quit)]:
+        for text, callback in [('Open OptiPlex Studio', self.restore), ('New Codex conversation', lambda: (self.restore(), self.action('code'))), ('Resume conversation', lambda: (self.restore(), self.session_browser())), ('Settings', lambda: (self.restore(), self.settings(None))), ('Quit', self.quit)]:
             item = Gtk.MenuItem(label=text)
             item.connect('activate', lambda _, cb=callback: cb())
             self.menu.append(item)
