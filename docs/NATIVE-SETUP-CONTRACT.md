@@ -32,7 +32,7 @@ Example (diagnostic only; not a requested permanent user setup step):
 python3 tools/native_preflight.py
 ```
 
-The preflight intentionally reports *executable presence*, not actual health, installed version, export support, MCP connection or project readiness. Native Studio **cannot yet operate completely without its remote Tailscale/Wolf-oriented routes**; making local launch and Codex/asset handoff reliable is follow-up work, not magically solved by the preflight.
+The preflight intentionally reports *executable presence*, not actual health, installed version, export support, MCP connection or project readiness. The published v0.3.0 client was SSH/Wolf-oriented; this development branch begins replacing those routes with native local project and Codex/Godot operations. **The new local runtime, native asset workflows and installation are not yet fully accepted.**
 
 ## Next engineering slices — do in order
 
@@ -43,3 +43,15 @@ The preflight intentionally reports *executable presence*, not actual health, in
 5. Prove off-host backup and isolated restore, clean-restart/reconnection and Codex resume. Only then mark the frozen milestone complete.
 
 **Not part of this task:** Cyclops, Material Maker, Zed, Pixelorama, GdUnit4, new editor/GUI redesign, speculative new MCP frameworks, or a polished wizard before the backend is demonstrably stable.
+
+## Critical clarification: there is no Studio "remote mode"
+
+Per [accepted ADR-001](ADR-001-LOCAL-FIRST-SHARED-STUDIO-RUNTIME.md), **Studio runs on the workstation and uses its workstation-resident project/runtime**. Remote viewing through OptiPlex NOW is a presentation concern, not a Studio connection setting.
+
+- **Physical workstation:** normal local Studio GUI.
+- **Wolf/NOW desktop on the same workstation:** another graphical Studio frontend accessing the same host-owned project/task runtime through scoped, authenticated inter-process communication. This shared service boundary remains to be implemented and tested; simply using `/projects` is insufficient.
+- **Headless tasks:** owned by the host runtime, not by whichever GTK window launched them.
+- **Legacy client:** released Studio v0.3.0 and some source helper functions previously let a *different computer* use Tailscale/SSH and Moonlight to reach an OptiPlex. That was a bootstrap implementation, **not** a supported long-term Studio workflow. Existing installed clients remain unchanged by this branch; the new GTK path should not display a local/remote selector. Legacy helper code is retained temporarily only for safe, test-driven retirement.
+- **Future separate cross-machine frontend:** not in v1 scope, and would need a different authenticated protocol; not equivalent to NOW streaming.
+
+**Non-goal:** preserve remote-client UI or accidentally create two sets of Codex processes, projects or preferences. No Studio release is ready until a single canonical host runtime is demonstrated.
