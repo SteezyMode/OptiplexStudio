@@ -436,9 +436,9 @@ def wait_for_studio_desktop(config, project, on_progress=None, stream_errors=Non
 
 def run_action(config, action, name, on_started=None, on_error=None, on_progress=None, session_id=None, prompt=None, all_sessions=False):
     local = config.get('mode') == 'local'
-    if local and action == 'edit':
+    if local and action in ('edit', 'blender', 'lmms'):
         import local_workspace
-        return local_workspace.start_godot(name)
+        return local_workspace.start_application(action, name)
     if not local:
         cmd = ssh_args(config, action, name, action in ('code', 'resume'))
     if action in ('code', 'resume'):
