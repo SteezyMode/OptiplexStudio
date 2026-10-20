@@ -1,6 +1,6 @@
 # OptiPlex Studio
 
-> **Current release:** OptiPlex Studio 0.4.9 is the proposed merged functional local-first beta. The GitHub Release is not published until CI and installed-package checks pass.
+> **Release candidate:** OptiPlex Studio 0.4.10 is the integrated local-first beta. The v0.4.9 GitHub Actions release failed because GTK tests lacked a display; the workflow has been corrected. Version 0.4.10 is not a published download until its release workflow succeeds.
 
 **Download:** [Latest tested OptiPlex Studio release](https://github.com/SteezyMode/OptiplexStudio/releases/latest) (choose the `.deb` asset).
 
