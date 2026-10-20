@@ -3,9 +3,7 @@
 Existing project_helper remains the sole project policy/metadata implementation.
 Only a validated Studio project may be passed to an editor or Codex.
 """
-import os
 from pathlib import Path
-import shutil
 import subprocess
 
 
@@ -50,30 +48,14 @@ def request(project, operation, **fields):
         return []
     if operation == "sessions":
         from session_helper import list_codex_sessions
-        return list_codex_sessions(base, project, fields)
+        return list_codex_sessions(base, project, fields, codex_binary=binary("codex"))
     return project_helper.handle(dict(fields, version=project_helper.VERSION,
                                       project=project, operation=operation), base)
 
 
 def binary(name):
-    home = Path.home()
-    tools = home / "StudioProjects" / ".tools"
-    candidates = {
-        "codex": [home / ".local/bin/codex"],
-        "godot": sorted((tools / "godot-native").glob("*/Godot*_linux.x86_64")),
-        "blender": sorted((tools / "blender-native").glob("blender-*-linux-x64/blender")),
-        "lmms": [tools / "lmms-native/lmms.AppImage"],
-    }
-    if name not in candidates:
-        raise ValueError("Unsupported native application.")
-    # No shell and no hard-coded account username. Prefer installed tools on PATH.
-    found = shutil.which(name)
-    if found:
-        candidates[name].insert(0, Path(found))
-    for candidate in candidates[name]:
-        if candidate.is_file() and os.access(candidate, os.X_OK):
-            return str(candidate.resolve())
-    raise RuntimeError(f"{name.title()} executable not found. Install or configure the supported native tool first.")
+    from native_tools import resolve
+    return resolve(name)
 
 
 def command(action, name):
