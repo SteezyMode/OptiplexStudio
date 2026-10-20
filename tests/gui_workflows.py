@@ -33,7 +33,7 @@ def transport(config, project, operation, progress=None, **fields):
 project_client.request = transport
 app.core.projects = lambda config: [{'name': name, 'branch': 'main', 'dirty': True, 'commit': 'fixture'} for name in ('game-one', 'game-two')]
 s = app.Studio()
-s.config = {'host': '100.100.100.101', 'user': 'optiplex', 'moonlight_appimage': '', 'moonlight_app': ''}
+s.config = {'mode': 'local'}
 phase = ['ready']
 errors = []
 started = time.monotonic()
@@ -76,7 +76,8 @@ def drive():
                 assert s.tray.get_title() == 'OptiPlex Studio'
             assert s.active_label.get_text() == 'ACTIVE PROJECT: game-two'
             captions = {w.get_label() for w in descendants(s.window) if isinstance(w, Gtk.Button)}
-            assert {'Blockbench', 'CozyClay', 'Onionskyn', 'Krita', 'Blender', 'Import Assets', 'Share Project Context', 'Open Studio Desktop'} <= captions
+            assert {'Godot', 'New Codex Session', 'Import Assets', 'Share Project Context', 'Resume Session…'} <= captions
+            assert not {'Open Studio Desktop', 'Moonlight', 'Blockbench', 'CozyClay', 'Onionskyn'} & captions
             s.combo.set_active_id('album')
             assert all(not button.get_sensitive() for button in s.godot_buttons)
             assert all(button.get_sensitive() for button in s.project_buttons)
