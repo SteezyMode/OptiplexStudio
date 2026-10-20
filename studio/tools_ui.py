@@ -111,7 +111,7 @@ class ToolsUI:
                     '\nVerify: ' + plan.algorithm.upper() + ' from ' + plan.integrity_source +
                     '\nDestination: ' + str(plan.destination) +
                     ('\nComponents: Codex, code-mode host, ripgrep, and Linux bubblewrap.' if name == 'codex' else '') +
-                    '\nRootless installation. No system packages or remote scripts. '
+                    '\nRootless installation. No system package changes or arbitrary scripts. '
                     'Existing configurations are preserved. The executable is not run during setup.')
                 confirm.add_buttons('CANCEL', Gtk.ResponseType.CANCEL,
                                     'DOWNLOAD AND INSTALL', Gtk.ResponseType.OK)

@@ -98,7 +98,7 @@ def drive():
             s.combo.set_active(-1)
             assert not s.ai_run.get_sensitive()
             s.combo.set_active_id('album')
-            assert all(not button.get_sensitive() for button in s.godot_buttons)
+            assert all(button.get_sensitive() for button in s.godot_buttons)
             assert all(button.get_sensitive() for button in s.project_buttons)
             s.ai_run.clicked()
             assert calls[-1][2] == 'album'
@@ -198,13 +198,11 @@ def drive():
             if dialog:
                 entry=next(w for w in descendants(dialog) if isinstance(w,Gtk.Entry))
                 entry.set_text('new-album')
-                template=next(w for w in descendants(dialog) if isinstance(w,Gtk.ComboBoxText))
-                template.set_active(2)
                 phase[0]='created'
                 dialog.response(Gtk.ResponseType.OK)
         elif phase[0] == 'created':
-            assert session_resumes[-1] == ('new','new-album',{'template':'Studio'})
-            print('GTK integration passed: templates, multiple project types, session search/all-project filtering/UUID resume, actual launcher names, remembered selection, native snapshot review/save ZIP, documentation edit/conflict token, project isolation and restoration.')
+            assert session_resumes[-1] == ('new','new-album',{})
+            print('GTK integration passed: local project creation, session search/all-project filtering/UUID resume, actual launcher names, remembered selection, native snapshot review/save ZIP, documentation edit/conflict token, project isolation and restoration.')
             s.quit()
             return False
     except Exception as exc:

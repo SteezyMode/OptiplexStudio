@@ -102,7 +102,7 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
         body.pack_start(self.detail, False, False, 0)
         tabs = Gtk.Notebook()
         body.pack_start(tabs, True, True, 0)
-        self.project_buttons, self.godot_buttons, self.connection_buttons = [], [], []
+        self.project_buttons, self.godot_buttons = [], []
         def page(title, scroll=True):
             box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, border_width=10)
             if scroll:
@@ -121,8 +121,6 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
                     self.project_buttons.append(button)
                 elif prerequisite == 'godot':
                     self.godot_buttons.append(button)
-                else:
-                    self.connection_buttons.append(button)
                 button.set_sensitive(False)
                 layout.attach(button, index % columns, index // columns, 1, 1)
             box.pack_start(layout, False, False, 0)
@@ -224,8 +222,7 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
             ('Find Conversations', self.session_browser, 'project'),
             ('External Codex Terminal', lambda _: self.action('code'), 'project'),
             ('Explain Project', lambda _: self.action('code', prompt=core.CODEX_TASKS['Explain Project']), 'project'),
-            ('Copy ChatGPT Brief', lambda _: self.copy_brief(), 'project'),
-            ('Open ChatGPT', self.open_chatgpt, None)], button_name='setting')
+            ('Copy ChatGPT Brief', lambda _: self.copy_brief(), 'project')], button_name='setting')
         advanced.pack_start(self.label('Resume Conversation includes search, sorting and All Projects. Codex conversations run inside Studio. External Codex Terminal remains available. Review Project Context before attaching it to ChatGPT.', 'helper'), False, False, 0)
         # Advanced operations live in a compact toolbar menu, not a permanent grid.
         actions = Gtk.Menu()
@@ -234,7 +231,6 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
             ('Open Codex Terminal', lambda _: self.action('code')),
             ('Explain Project', lambda _: self.action('code', prompt=core.CODEX_TASKS['Explain Project'])),
             ('Copy ChatGPT Brief', lambda _: self.copy_brief()),
-            ('Open ChatGPT', self.open_chatgpt),
         ):
             item = Gtk.MenuItem(label=caption)
             item.connect('activate', handler)
@@ -265,36 +261,6 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
             self.status.set_text('Enter a prompt of 1–32,000 characters without NUL characters.')
             return
         self.open_embedded(prompt=prompt)
-
-    def open_url(self, url):
-        config = dict(self.config)
-        self.status.set_text('Opening Studio browser through Tailscale…')
-        def done(result, error):
-            self.status.set_text(error or result)
-        self.worker(lambda: core.open_application(config, url), done)
-
-    def open_moonlight(self, _=None):
-        def task(progress):
-            command = core.moonlight_prefix(self.config)
-            import subprocess
-            # Open the existing client/pairing UI, without guessing an app title.
-            process = subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, env=core.moonlight_environment(self.config, command))
-            try:
-                _, errors = process.communicate(timeout=2)
-            except subprocess.TimeoutExpired:
-                threading.Thread(target=process.communicate, daemon=True).start()
-                return 'Moonlight opened. Use an advertised application; Studio does not configure Wolf profiles.'
-            if process.returncode:
-                raise RuntimeError('Moonlight failed: ' + errors.decode(errors='replace')[-2000:])
-            return 'Moonlight launch requested.'
-        self.project_task(task, lambda message: self.status.set_text(message), 'Opening Moonlight…')
-
-    def do_shutdown(self):
-        view = getattr(self, 'embedded_view', None)
-        if view:
-            view.close()
-        core.close_tunnels()
-        Gtk.Application.do_shutdown(self)
 
     def worker(self, task, done):
         def run():
@@ -347,10 +313,7 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
         p = next((p for p in self.rows if p['name'] == name), {})
         for button in getattr(self, 'godot_buttons', []):
             button.set_sensitive(selected and not self.busy)
-        connection_ready = True
-        for button in getattr(self, 'connection_buttons', []):
-            button.set_sensitive(connection_ready and not self.busy)
-        self.create_button.set_sensitive(connection_ready and not self.busy)
+        self.create_button.set_sensitive(not self.busy)
         if hasattr(self.combo, 'set_sensitive'):
             self.combo.set_sensitive(not self.busy)
         if hasattr(self, 'active_label'):
@@ -457,7 +420,7 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
         entry.set_activates_default(True)
         dialog.set_default_response(Gtk.ResponseType.OK)
         box.pack_start(entry, False, False, 6)
-        box.pack_start(self.label('Creates a shared project with categorized assets, GAME.md, PROGRESS.md, DECISIONS.md and AGENTS.md. Initializes Git without a commit.', 'helper'), False, False, 6)
+        box.pack_start(self.label('Creates a local project with categorized assets and project documents. Initializes Git without a commit.', 'helper'), False, False, 6)
         dialog.show_all()
         if dialog.run() == Gtk.ResponseType.OK:
             name = entry.get_text()

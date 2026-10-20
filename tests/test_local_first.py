@@ -24,12 +24,19 @@ class LocalFirst(unittest.TestCase):
         return client.request(self.config, 'game', 'create', template=kind)
 
     def test_fresh_workspace_discovery_and_creation_are_local(self):
-        with patch('core.ssh_args', side_effect=AssertionError('SSH forbidden')), patch('core.projects', side_effect=AssertionError('HTTP forbidden')):
             self.assertEqual(client.request(self.config, 'Studio', 'list_projects'), [])
             self.create()
             self.assertEqual(client.request(self.config, 'Studio', 'list_projects')[0]['name'], 'game')
             self.assertIn('GAME.md', client.request(self.config, 'game', 'docs'))
             self.assertEqual(client.project_uri(self.config, 'game'), (self.base / 'game').as_uri())
+
+    def test_legacy_transport_and_hosted_catalog_are_absent(self):
+        import core
+        self.assertFalse(hasattr(core, 'ssh_args'))
+        self.assertFalse(hasattr(core, 'remote_projects'))
+        self.assertFalse(hasattr(core, 'open_application'))
+        self.assertFalse(hasattr(client, 'remote_request'))
+        self.assertFalse(hasattr(client, 'remote_project_path'))
 
     def test_templates_and_existing_data_preserved(self):
         for index, kind in enumerate(policy.PROJECT_TYPES):
@@ -48,7 +55,7 @@ class LocalFirst(unittest.TestCase):
             self.create()
         self.assertFalse((Path(self.temp.name) / 'game').exists())
 
-    def test_traversal_and_remote_operations_rejected(self):
+    def test_traversal_and_unsupported_operations_rejected(self):
         for name in ('../escape', '/escape', 'a/b'):
             with self.assertRaises(ValueError):
                 client.request(self.config, name, 'create')

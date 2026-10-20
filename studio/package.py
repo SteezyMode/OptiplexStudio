@@ -39,7 +39,7 @@ if not launcher.is_file():
 for folder in ['DEBIAN', 'usr/bin', 'usr/lib/optiplex-studio', 'usr/share/applications', 'usr/share/pixmaps', 'usr/share/doc/optiplex-studio']:
     (pkg / folder).mkdir(parents=True, exist_ok=True)
 shutil.copy2(root / 'build/local-first/optiplex-studio', pkg / 'usr/bin/optiplex-studio')
-for filename in ['app.py', 'core.py', 'project_helper.py', 'project_client.py', 'project_ui.py', 'desktop_helper.py', 'godot_focus.py', 'file_browser.py', 'session_helper.py', 'session_ui.py', 'native_tools.py', 'portable_install.py', 'tool_environment.py', 'codex_install.py', 'tools_ui.py', 'conversation_store.py', 'codex_rpc.py', 'embedded_codex.py', 'embedded_ui.py', 'transcript.py', 'style.css']:
+for filename in ['app.py', 'core.py', 'project_helper.py', 'project_client.py', 'project_ui.py', 'session_helper.py', 'session_ui.py', 'native_tools.py', 'portable_install.py', 'tool_environment.py', 'codex_install.py', 'tools_ui.py', 'conversation_store.py', 'codex_rpc.py', 'embedded_codex.py', 'embedded_ui.py', 'transcript.py', 'style.css']:
     shutil.copy2(root / 'studio' / filename, pkg / 'usr/lib/optiplex-studio' / filename)
 for path, destination in icons:
     (pkg / destination).mkdir(parents=True, exist_ok=True)
@@ -52,7 +52,7 @@ shutil.copy2(root / 'README-STUDIO.md', pkg / 'usr/share/doc/optiplex-studio/REA
 (pkg / 'usr/share/applications/com.monumentrisk.OptiPlexStudio.desktop').write_text('''[Desktop Entry]
 Type=Application
 Name=OptiPlex Studio
-Comment=Creative projects, Codex sessions and shared assets
+Comment=Local creative projects and Codex sessions
 Exec=/usr/bin/optiplex-studio
 TryExec=/usr/bin/optiplex-studio
 Icon=optiplex-studio
@@ -67,7 +67,7 @@ Section: devel
 Priority: optional
 Architecture: {arch}
 Maintainer: OptiPlex Studio <local@localhost>
-Depends: libc6 (>= 2.34), python3, python3-gi, gir1.2-gtk-3.0, librsvg2-common, openssh-client, gvfs-backends, gvfs-fuse, x-terminal-emulator, ca-certificates
+Depends: libc6 (>= 2.34), python3, python3-gi, gir1.2-gtk-3.0, x-terminal-emulator, ca-certificates
 Recommends: gir1.2-ayatanaappindicator3-0.1, wmctrl
 Description: Native GTK3 OptiPlex Studio desktop
  Local creative projects, native tools and project-aware Codex sessions.

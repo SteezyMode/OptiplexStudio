@@ -76,7 +76,8 @@ with patch('embedded_ui.Conversation', Fixture):
             assert view.panel.get_preferred_height()[0] <= 768
             assert view.output.get_allocated_height() >= 120
             assert view.prompt.get_allocated_height() >= 48
-            assert view.send_button.get_allocation().y + view.send_button.get_allocated_height() <= view.panel.get_allocated_height()
+            _, send_y = view.send_button.translate_coordinates(view.panel, 0, 0)
+            assert send_y + view.send_button.get_allocated_height() <= view.panel.get_allocated_height()
             view.close()
             assert not view.alive and view.conversation.server.closed
         except Exception as exc:
