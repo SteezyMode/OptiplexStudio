@@ -29,7 +29,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          /usr/bin/python3 -m unittest discover -s tests -p 'test_desktop_process.py' -v
+          /usr/bin/python3 -B -m unittest discover -s tests -v
           make -f Makefile.studio package
           mapfile -t packages < <(find dist -maxdepth 1 -type f -name 'optiplex-studio_*_amd64.deb')
           test "${#packages[@]}" -eq 1
