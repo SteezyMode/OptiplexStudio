@@ -7,6 +7,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, Gio, GLib
 import core
+import local_workspace
 import project_client
 from session_ui import SessionUI
 from project_ui import ProjectUI, remembered_project, remember_project
@@ -36,11 +37,13 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
         self.sni = None
         self.tray = None
         self.busy = False
-        self.config = {'host': '', 'user': 'optiplex', 'moonlight_appimage': '', 'moonlight_app': ''}
+        self.config = {'mode': 'local', 'host': '', 'user': 'optiplex', 'moonlight_appimage': '', 'moonlight_app': ''}
         try:
             saved = json.loads(CONFIG.read_text())
             if isinstance(saved, dict):
                 self.config.update(saved)
+                if 'mode' not in saved and saved.get('host'):
+                    self.config['mode'] = 'remote'  # Preserve old remote configurations.
         except (OSError, ValueError, TypeError):
             pass
 
@@ -160,7 +163,7 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
         self.initialize_tray()
         self.window.show_all()
         self.refresh()
-        if not self.config.get('host'):
+        if self.config.get('mode') == 'remote' and not self.config.get('host'):
             GLib.idle_add(self.settings, None)
 
     def open_url(self, url):
@@ -209,7 +212,7 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
         self.combo.remove_all()
         self.selection_changed(None)
         self.refresh_button.set_sensitive(False)
-        self.status.set_text('Reading Studio Projects API…')
+        self.status.set_text('Reading local projects…' if local_workspace.is_local(config) else 'Reading Studio Projects API…')
         def done(rows, error):
             self.refreshing = False
             self.refresh_button.set_sensitive(True)
@@ -220,7 +223,7 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
                 self.rows = []
                 self.combo.remove_all()
                 self.selection_changed(None)
-                self.status.set_text('Project API unavailable: ' + error)
+                self.status.set_text('Project discovery failed: ' + error)
                 return
             self.rows = rows
             self.combo.remove_all()
@@ -230,7 +233,7 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
                 self.combo.set_active(0 if rows else -1)
             self.status.set_text(f'{len(rows)} projects loaded.' if rows else 'No projects yet. Create a project to begin.')
         def discover():
-            api_rows = core.projects(config)
+            api_rows = [] if local_workspace.is_local(config) else core.projects(config)
             local_rows = project_client.request(config, 'Studio', 'list_projects')
             merged = {p['name']: dict(p, type=p.get('type', 'Godot')) for p in api_rows}
             merged.update({p['name']: p for p in local_rows})
@@ -245,14 +248,18 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
         p = next((p for p in self.rows if p['name'] == name), {})
         for button in getattr(self, 'godot_buttons', []):
             button.set_sensitive(selected and p.get('type', 'Godot') == 'Godot' and not self.busy)
-        try:
-            core.ssh_args(self.config, 'edit', 'Studio')
-            connection_ready = True
-        except ValueError:
-            connection_ready = False
+        if local_workspace.is_local(self.config):
+            connection_ready = False  # Streaming shortcuts remain remote-only.
+        else:
+            try:
+                core.ssh_args(self.config, 'edit', 'Studio')
+                connection_ready = True
+            except ValueError:
+                connection_ready = False
         for button in getattr(self, 'connection_buttons', []):
-            button.set_sensitive(connection_ready and not self.busy)
-        self.create_button.set_sensitive(connection_ready and not self.busy)
+            local_browser = local_workspace.is_local(self.config) and button.get_label() == 'Open ChatGPT'
+            button.set_sensitive((connection_ready or local_browser) and not self.busy)
+        self.create_button.set_sensitive((connection_ready or local_workspace.is_local(self.config)) and not self.busy)
         if hasattr(self.combo, 'set_sensitive'):
             self.combo.set_sensitive(not self.busy)
         if hasattr(self, 'active_label'):
@@ -277,14 +284,21 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
             self.status.set_text('Select a Godot project to open Godot.')
             return
         try:
-            core.ssh_args(self.config, action, name)
-        except ValueError as exc:
+            if local_workspace.is_local(self.config):
+                if action != 'new':
+                    local_workspace.project_path(name)
+            else:
+                core.ssh_args(self.config, action, name)
+        except (ValueError, OSError) as exc:
             self.status.set_text(str(exc))
             return
         self.busy = True
         self.create_button.set_sensitive(False)
         self.selection_changed(None)
-        self.status.set_text('Opening Codex terminal…' if action in ('code', 'resume') else 'Connecting Moonlight and waiting for Studio Desktop…' if action == 'edit' else 'Waiting for remote Studio…')
+        self.status.set_text('Opening Codex terminal…' if action in ('code', 'resume') else
+                             'Opening local Godot…' if action == 'edit' and local_workspace.is_local(self.config) else
+                             'Connecting Moonlight and waiting for Studio Desktop…' if action == 'edit' else
+                             'Creating project…' if action == 'new' else 'Waiting for remote Studio…')
         config = dict(self.config)
         stream_errors = []
         terminal_released = [False]
@@ -368,22 +382,40 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
             dialog.destroy()
 
     def settings(self, _):
-        dialog = Gtk.Dialog(title='Studio connection', transient_for=self.window, modal=True)
+        dialog = Gtk.Dialog(title='Studio workspace', transient_for=self.window, modal=True)
         dialog.add_buttons('CANCEL', Gtk.ResponseType.CANCEL, 'SAVE', Gtk.ResponseType.OK)
         box = dialog.get_content_area()
         box.set_border_width(18)
+        box.pack_start(self.label('Where do you want Studio to work?', 'section'), False, False, 5)
+        choice = Gtk.ComboBoxText()
+        choice.append('local', 'This computer')
+        choice.append('remote', 'Remote OptiPlex (Tailscale / Wolf)')
+        choice.set_active_id(self.config.get('mode', 'local'))
+        box.pack_start(choice, False, False, 6)
+        remote_fields = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         entries = {}
-        for key, title in [('host', 'OptiPlex Tailscale IPv4 address (100.64.0.0/10)'), ('user', 'SSH user'), ('moonlight_appimage', 'Moonlight AppImage path (optional; blank for automatic detection)'), ('moonlight_app', 'Wolf desktop app title (blank = OptiPlex Studio Desktop)')]:
-            box.pack_start(self.label(title, 'helper'), False, False, 5)
+        for key, title in [('host', 'Tailscale IPv4 address'), ('user', 'SSH user'),
+                           ('moonlight_appimage', 'Moonlight AppImage (optional)'),
+                           ('moonlight_app', 'Wolf desktop title (optional)')]:
+            remote_fields.pack_start(self.label(title, 'helper'), False, False, 0)
             entries[key] = Gtk.Entry(text=str(self.config.get(key, '')))
-            box.pack_start(entries[key], False, False, 5)
-        box.pack_start(self.label('Uses existing SSH keys and trusted host keys.\nComplete Tailscale and SSH pairing using your existing setup.\nNo passwords or NOW settings are stored here.', 'helper'), False, False, 8)
+            remote_fields.pack_start(entries[key], False, False, 0)
+        box.pack_start(remote_fields, False, False, 4)
+        box.pack_start(self.label('Local mode uses projects and Codex on this computer. Remote mode requires existing SSH pairing.', 'helper'), False, False, 6)
         dialog.show_all()
+        def show_remote(*_):
+            remote_fields.set_visible(choice.get_active_id() == 'remote')
+        choice.connect('changed', show_remote)
+        show_remote()
         while dialog.run() == Gtk.ResponseType.OK:
             candidate = dict(self.config)
+            candidate['mode'] = choice.get_active_id()
             candidate.update({k: e.get_text().strip() for k, e in entries.items()})
             try:
-                core.ssh_args(candidate, 'edit', 'validation')
+                if candidate['mode'] == 'remote':
+                    core.ssh_args(candidate, 'edit', 'validation')
+                elif candidate['mode'] != 'local':
+                    raise ValueError('Select a supported workspace mode.')
                 CONFIG.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
                 temp = CONFIG.with_suffix('.tmp')
                 fd = os.open(temp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o600)
@@ -391,7 +423,7 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
                     json.dump(candidate, out)
                 temp.replace(CONFIG)
                 self.config = candidate
-                self.status.set_text('Studio connection saved.')
+                self.status.set_text('Studio workspace settings saved.')
                 self.refresh()
                 break
             except (ValueError, OSError) as exc:
