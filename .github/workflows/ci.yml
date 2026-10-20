@@ -1,0 +1,40 @@
+name: Validate OptiPlex Studio
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+  # Rebuild and smoke-test even when no commits land (toolchain/apt drift).
+  schedule:
+    - cron: '47 3 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install build and GUI test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential python3 python3-gi python3-cairo python3-gi-cairo gir1.2-gtk-3.0 libgtk-3-bin dbus-x11 desktop-file-utils binutils gvfs-backends gvfs-fuse xvfb xauth x11-utils
+      - name: Build, run regressions, exercise GUI and validate package
+        shell: bash
+        run: |
+          set -euo pipefail
+          /usr/bin/python3 -m unittest discover -s tests -p 'test_desktop_process.py' -v
+          make -f Makefile.studio package
+          mapfile -t packages < <(find dist -maxdepth 1 -type f -name 'optiplex-studio_*_amd64.deb')
+          test "${#packages[@]}" -eq 1
+          package="${packages[0]}"
+          test "$(dpkg-deb -f "$package" Package)" = "optiplex-studio"
+          /usr/bin/python3 -B tests/run_gtk.py --package "$package"
+          /usr/bin/python3 -B studio/validate_package.py "$package"
+          bash tests/smoke_installed_package.sh

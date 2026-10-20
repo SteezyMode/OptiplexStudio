@@ -1,4 +1,5 @@
 from pathlib import Path
+from version import PACKAGE_VERSION
 import shutil
 import subprocess
 import struct
@@ -28,7 +29,7 @@ for filename in ('optiplex-studio.png', 'optiplex-studio-tray.png'):
         raise SystemExit('Approved PNG dimensions do not match: ' + str(path))
     icons.append((path, f'usr/share/icons/hicolor/{width}x{height}/apps'))
 arch = subprocess.check_output(['dpkg', '--print-architecture'], text=True).strip()
-name = f'optiplex-studio_0.4.8_{arch}'
+name = f'optiplex-studio_{PACKAGE_VERSION}_{arch}'
 pkg = root / 'build' / name
 if pkg.exists() or (root / 'dist' / (name + '.deb')).exists():
     raise SystemExit('Refusing to overwrite existing build/package: ' + name)
@@ -61,12 +62,12 @@ StartupNotify=true
 StartupWMClass=optiplex-studio
 ''')
 (pkg / 'DEBIAN/control').write_text(f'''Package: optiplex-studio
-Version: 0.4.8
+Version: {PACKAGE_VERSION}
 Section: devel
 Priority: optional
 Architecture: {arch}
 Maintainer: OptiPlex Studio <local@localhost>
-Depends: libc6 (>= 2.34), python3, python3-gi, gir1.2-gtk-3.0, librsvg2-common, x-terminal-emulator, ca-certificates
+Depends: libc6 (>= 2.34), python3, python3-gi, gir1.2-gtk-3.0, librsvg2-common, openssh-client, gvfs-backends, gvfs-fuse, x-terminal-emulator, ca-certificates
 Recommends: gir1.2-ayatanaappindicator3-0.1, wmctrl
 Description: Native GTK3 OptiPlex Studio desktop
  Local creative projects, native tools and project-aware Codex sessions.

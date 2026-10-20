@@ -174,3 +174,7 @@ separate future recovery flow. No new runtime dependencies were added.
 This source milestone is fixture-tested; authenticated native streaming and the
 1024x768 GTK layout still require workstation validation. See ADR-002 in `docs/`
 for exact environment failures and remaining acceptance checks.
+
+## Release integrity
+
+Official GitHub packages are built from version tags using the validated CI release workflow. The native installer and SHA-256 sidecar are provided through the repository’s latest Release page. See `docs/RELEASING.md`.

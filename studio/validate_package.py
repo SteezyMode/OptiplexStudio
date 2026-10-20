@@ -1,5 +1,6 @@
 """Inspect a built Debian artifact without installing it or running remote actions."""
 import ast
+from version import PACKAGE_VERSION
 import configparser
 import hashlib
 import io
@@ -11,15 +12,15 @@ import tarfile
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
-package = Path(sys.argv[1]) if len(sys.argv) > 1 else root / 'dist/optiplex-studio_0.4.4_amd64.deb'
+package = Path(sys.argv[1]) if len(sys.argv) > 1 else root / f'dist/optiplex-studio_{PACKAGE_VERSION}_amd64.deb'
 
 def field(name):
     return subprocess.check_output(['dpkg-deb', '--field', str(package), name], text=True).strip()
 
-for name, expected in {'Package': 'optiplex-studio', 'Version': '0.4.4', 'Architecture': 'amd64'}.items():
+for name, expected in {'Package': 'optiplex-studio', 'Version': PACKAGE_VERSION, 'Architecture': 'amd64'}.items():
     assert field(name) == expected, (name, field(name))
 dependencies = field('Depends')
-for name in ('libc6', 'python3', 'python3-gi', 'gir1.2-gtk-3.0', 'x-terminal-emulator', 'ca-certificates'):
+for name in ('libc6', 'python3', 'python3-gi', 'gir1.2-gtk-3.0', 'openssh-client', 'gvfs-backends', 'gvfs-fuse', 'x-terminal-emulator', 'ca-certificates'):
     assert name in dependencies, 'Missing dependency: ' + name
 with tarfile.open(fileobj=io.BytesIO(subprocess.check_output(['dpkg-deb', '--ctrl-tarfile', str(package)]))) as archive:
     assert {m.name.removeprefix('./') for m in archive if m.isfile()} == {'control'}, 'Unexpected maintainer scripts'
