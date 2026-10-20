@@ -59,12 +59,19 @@ class NativeLocalWorkspace(unittest.TestCase):
                 project_client.request(LOCAL, 'linked', 'docs')
 
     def test_local_codex_terminal_never_uses_ssh(self):
-        with (patch('local_workspace.command', return_value=['/bin/true']),
+        with (patch('persistent_sessions.TmuxSessions') as backend,
               patch('core.ssh_args', side_effect=AssertionError('SSH invoked')),
               patch('core.terminal_args', side_effect=lambda argv: argv)):
-            self.assertEqual(core.run_action(LOCAL, 'code', 'game'), 'Codex conversation closed.')
-            self.assertEqual(core.run_action(LOCAL, 'resume', 'game',
-                              session_id='12345678-1234-1234-1234-123456789012'), 'Codex conversation closed.')
+            backend.return_value.attach_argv.return_value = ['/bin/true']
+            self.assertEqual(core.run_action(LOCAL, 'code', 'game'),
+                             'Codex terminal detached; reconnect to the same project workspace.')
+            backend.return_value.ensure.assert_called_with(
+                'game', session_id=None, prompt=None, all_sessions=False)
+            backend.return_value.attach_argv.assert_called_with('game')
+            self.assertEqual(core.run_action(
+                LOCAL, 'resume', 'game',
+                session_id='12345678-1234-1234-1234-123456789012'),
+                'Codex terminal detached; reconnect to the same project workspace.')
             with self.assertRaises(ValueError):
                 core.run_action(LOCAL, 'resume', 'game', session_id='not-a-uuid')
             with self.assertRaises(ValueError):
