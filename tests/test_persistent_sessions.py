@@ -41,8 +41,11 @@ class PersistentSessionsTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.home = Path(self.tmp.name)
-        (self.home / "StudioProjects/Godot/game").mkdir(parents=True)
-        (self.home / "StudioProjects/Godot/other").mkdir(parents=True)
+        import project_helper
+        base = self.home / "StudioProjects/Godot"
+        base.mkdir(parents=True)
+        project_helper.create_project(base, "game")
+        project_helper.create_project(base, "other")
         self.runner = FakeTmux()
         self.backend = persistent_sessions.TmuxSessions(
             home=self.home, tmux="/usr/bin/tmux", runner=self.runner)
