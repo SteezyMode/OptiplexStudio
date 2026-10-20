@@ -32,7 +32,10 @@ def project_path(name):
     from project_helper import Project, project_name
     project_name(name)
     base = validate_root()
-    project = Project(base, name)  # FD-based path checks refuse symlinks.
+    try:
+        project = Project(base, name)  # FD-based path checks refuse symlinks.
+    except FileNotFoundError:
+        raise ValueError("Selected Studio project does not exist.") from None
     try:
         return base / name
     finally:
