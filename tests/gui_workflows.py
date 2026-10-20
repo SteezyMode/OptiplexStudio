@@ -76,7 +76,7 @@ def drive():
                 assert s.tray.get_title() == 'OptiPlex Studio'
             assert s.active_label.get_text() == 'ACTIVE PROJECT: game-two'
             captions = {w.get_label() for w in descendants(s.window) if isinstance(w, Gtk.Button)}
-            assert {'Godot', 'New Codex Session', 'Import Assets', 'Share Project Context', 'Resume Session…'} <= captions
+            assert {'Godot', 'Open Codex Workspace', 'Import Assets', 'Share Project Context', 'Resume Session…'} <= captions
             assert not {'Open Studio Desktop', 'Moonlight', 'Blockbench', 'CozyClay', 'Onionskyn'} & captions
             s.combo.set_active_id('album')
             assert all(not button.get_sensitive() for button in s.godot_buttons)
