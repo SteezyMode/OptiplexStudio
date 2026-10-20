@@ -117,5 +117,29 @@ class NativeLocalWorkspace(unittest.TestCase):
                 self.assertEqual(victim.read_text(), 'keep')
 
 
+    def test_blender_lmms_are_scoped_native_launches(self):
+        import subprocess
+        with tempfile.TemporaryDirectory() as d, patch('local_workspace.Path.home', return_value=Path(d)):
+            project_client.request(LOCAL, 'game', 'create')
+            native = {'blender': '/native/blender', 'lmms': '/native/lmms'}
+            state = Path(d) / 'state'
+            with patch.dict(os.environ, {'XDG_STATE_HOME': str(state)}), patch(
+                'local_workspace.binary', side_effect=lambda name: native[name]), patch(
+                'local_workspace.subprocess.Popen') as launched, patch(
+                'core.ssh_args', side_effect=AssertionError('No SSH permitted')):
+                launched.return_value.wait.side_effect = subprocess.TimeoutExpired('program', 0.35)
+                for kind in ('blender', 'lmms'):
+                    self.assertEqual(local.command(kind, 'game'), [native[kind]])
+                    self.assertIn(kind.title() if kind == 'blender' else 'LMMS',
+                                  core.run_action(LOCAL, kind, 'game'))
+                    self.assertEqual(launched.call_args.args[0], [native[kind]])
+                    self.assertEqual(launched.call_args.kwargs['cwd'],
+                                     str(Path(d) / 'StudioProjects/Godot/game'))
+                    self.assertEqual((state / 'optiplex-studio' / (kind + '-launch.log')).stat().st_mode & 0o777, 0o600)
+                with self.assertRaises(ValueError):
+                    local.command('blender', '../bad-name')
+                self.assertEqual(launched.call_count, 2)
+
+
 if __name__ == '__main__':
     unittest.main()
