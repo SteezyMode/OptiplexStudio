@@ -21,6 +21,11 @@ def request(config, project, operation, progress=None, request_timeout=180, **fi
     if operation not in OPERATIONS:
         raise ValueError('Unsupported project operation.')
     policy.project_name(project)
+    if config.get('mode') == 'local':
+        import local_workspace
+        if operation in ('desktop', 'desktop_status'):
+            raise ValueError('Desktop streaming operations are unavailable in local mode.')
+        return local_workspace.request(project, operation, **fields)
     command = core.ssh_args(config, 'edit', project)
     # Source is the bundled, fixed helper, never a user-provided script or command.
     source = Path(__file__).with_name('desktop_helper.py' if operation in ('desktop', 'desktop_status') else 'project_helper.py').read_text()
@@ -88,6 +93,9 @@ def request(config, project, operation, progress=None, request_timeout=180, **fi
 
 def remote_project_path(config, project):
     policy.project_name(project)
+    if config.get('mode') == 'local':
+        import local_workspace
+        return str(local_workspace.project_path(project))
     core.ssh_args(config, 'edit', project)  # validate configured user and numeric IP
     home = '/root' if config['user'] == 'root' else '/home/' + config['user']
     return f'{home}/StudioProjects/Godot/{project}'
@@ -95,6 +103,8 @@ def remote_project_path(config, project):
 
 def project_uri(config, project, assets=False):
     path = remote_project_path(config, project) + ('/assets' if assets else '')
+    if config.get('mode') == 'local':
+        return Path(path).as_uri()
     return f'sftp://{config["user"]}@{core.tailscale_ip(config)}' + quote(path, safe='/')
 
 
