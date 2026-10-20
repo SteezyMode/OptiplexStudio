@@ -5,6 +5,7 @@ Only a validated Studio project may be passed to an editor or Codex.
 """
 from pathlib import Path
 import subprocess
+import os
 
 
 def is_local(config):
@@ -76,12 +77,31 @@ def command(action, name):
 
 
 def start_godot(name):
+    """Start Godot once with a private bounded launch log.
+
+    A returned message confirms only process startup, not a rendered editor.
+    """
     args = command("edit", name)
-    process = subprocess.Popen(args, cwd=str(project_path(name)), stdin=subprocess.DEVNULL,
-                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                               start_new_session=True)
-    # Start confirmation only: render, window appearance, and project import
-    # require an actual graphical acceptance test.
-    if process.poll() is not None and process.returncode:
-        raise RuntimeError(f"Godot exited immediately (code {process.returncode}).")
-    return "Godot editor launch requested for " + name + "."
+    state = Path(os.environ.get("XDG_STATE_HOME", "")) if os.environ.get("XDG_STATE_HOME") else Path.home() / ".local/state"
+    if not state.is_absolute():
+        state = Path.home() / ".local/state"
+    directory = state / "optiplex-studio"
+    if directory.is_symlink():
+        raise RuntimeError("Studio diagnostics directory cannot be a symlink.")
+    directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+    logfile = directory / "godot-launch.log"
+    flags = os.O_CREAT | os.O_WRONLY | os.O_TRUNC | os.O_NOFOLLOW
+    try:
+        fd = os.open(logfile, flags, 0o600)
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "wb") as output:
+            process = subprocess.Popen(args, cwd=str(project_path(name)), stdin=subprocess.DEVNULL,
+                                       stdout=output, stderr=subprocess.STDOUT,
+                                       start_new_session=True)
+        try:
+            status = process.wait(timeout=0.35)
+        except subprocess.TimeoutExpired:
+            return "Godot editor started for " + name + "."
+        raise RuntimeError(f"Godot exited immediately (code {status}). See {logfile} for details.")
+    except OSError as exc:
+        raise RuntimeError(f"Godot could not be launched: {exc}. See {logfile} for details.") from exc
