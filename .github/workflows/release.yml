@@ -33,7 +33,7 @@ jobs:
           test -n "$version"
           test "$version" != "$GITHUB_REF_NAME"
           /usr/bin/python3 -m unittest discover -s tests -p 'test_desktop_process.py' -v
-          make -f Makefile.studio package
+          xvfb-run -a make -f Makefile.studio package
           package="dist/optiplex-studio_${version}_amd64.deb"
           test -f "$package"
           test "$(dpkg-deb -f "$package" Package)" = "optiplex-studio"
