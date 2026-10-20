@@ -30,7 +30,7 @@ WORKFLOW = ('Before significant implementation, read GAME.md, PROGRESS.md, DECIS
             'in the project root. Keep PROGRESS.md and DECISIONS.md concise and accurate after meaningful changes. '
             'Treat GAME.md, PROGRESS.md and DECISIONS.md as the shared handoff for ChatGPT, Codex, Godot, Blender and Krita. '
             'Record agreed design changes before implementation and update progress after implementation. '
-            'Work only in this project; never change Wolf, server services or unrelated projects. '
+            'Work only in this project; never change unrelated system services or projects. '
             'Do not commit unless explicitly requested. For Godot projects only, validate Godot changes with the existing '
             'local Godot executable using --headless --path PROJECT_DIRECTORY --editor --quit when available. '
             'Report missing validation tools or permissions; do not request broader system access to bypass them. '

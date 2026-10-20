@@ -37,7 +37,7 @@ def terminal_args(command):
 CODEX_TASKS = {
     'Review Changes': 'Read AGENTS.md and the project documents. Review current uncommitted changes for defects and risks. Report findings without changing files or committing.',
     'Explain Project': 'Read AGENTS.md and the project documents. Explain this project, its structure, current state, and useful next steps. Do not change files or commit.',
-    'Fix Godot Errors': 'Read AGENTS.md and the project documents. Inspect this Godot project, run existing permitted Godot validation when available, and fix confirmed errors. Report unavailable tools or permissions; never bypass permissions or change Wolf. Update concise progress and decisions. Do not commit.',
+    'Fix Godot Errors': 'Read AGENTS.md and the project documents. Inspect this Godot project, run existing permitted Godot validation when available, and fix confirmed errors. Report unavailable tools or permissions; never bypass permissions or change unrelated system services. Update concise progress and decisions. Do not commit.',
     'Validate Project': 'Read AGENTS.md and the project documents. Run existing permitted Godot project validation when available and report results. Report missing permissions or tools without bypassing them. Do not change files or commit.'}
 
 
