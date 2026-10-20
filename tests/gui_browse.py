@@ -8,7 +8,10 @@ from gi.repository import Gtk,GLib,Gio
 import app,project_client,project_helper,file_browser
 
 fixture=tempfile.TemporaryDirectory(prefix='studio-browser-fixture-')
-base=Path(fixture.name)
+# Exercise actual native project URI resolution; do not mock away policy checks.
+os.environ['HOME']=fixture.name
+base=Path(fixture.name)/'StudioProjects/Godot'
+base.mkdir(parents=True)
 project_helper.create_project(base,'game')
 project_client.request=lambda config,project,operation,progress=None,**fields: project_helper.handle(dict(fields,version=1,project=project,operation=operation),base)
 app.core.projects=lambda config:[{'name':'game','type':'Godot'}]
