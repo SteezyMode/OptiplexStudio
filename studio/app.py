@@ -136,8 +136,10 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
              'godot' if name in ('Fix Godot Errors', 'Validate Project') else 'project') for name in core.CODEX_TASKS])
         ai_page.pack_start(self.label('Codex uses the active project directory and AGENTS.md. Export and review Project Context, then attach it to ChatGPT manually.', 'helper'), False, False, 0)
         tools = page('Creative Tools')
-        grid(tools, [('Godot', lambda _: self.action('edit'), 'godot')])
-        tools.pack_start(self.label('Godot opens the selected project on this computer. Native Blender and LMMS adapters are still being validated.', 'helper'), False, False, 0)
+        grid(tools, [('Godot', lambda _: self.action('edit'), 'godot'),
+                     ('Blender', lambda _: self.action('blender'), 'project'),
+                     ('LMMS', lambda _: self.action('lmms'), 'project')])
+        tools.pack_start(self.label('Native tools open for the selected project. Blender and LMMS start in its folder; editable asset export/import is not yet automatic.', 'helper'), False, False, 0)
         self.transfer_progress = Gtk.ProgressBar(show_text=True)
         self.transfer_progress.set_text('Local project operations')
         body.pack_start(self.transfer_progress, False, False, 0)
@@ -281,7 +283,8 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
         self.create_button.set_sensitive(False)
         self.selection_changed(None)
         self.status.set_text('Opening Codex terminal…' if action in ('code', 'resume') else
-                             'Opening local Godot…' if action == 'edit' and local_workspace.is_local(self.config) else
+                             'Opening native ' + {'edit': 'Godot', 'blender': 'Blender', 'lmms': 'LMMS'}[action] + '…'
+                             if action in ('edit', 'blender', 'lmms') and local_workspace.is_local(self.config) else
                              'Connecting Moonlight and waiting for Studio Desktop…' if action == 'edit' else
                              'Creating project…' if action == 'new' else 'Waiting for remote Studio…')
         config = dict(self.config)
