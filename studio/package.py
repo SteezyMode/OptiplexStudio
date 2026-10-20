@@ -36,7 +36,7 @@ if pkg.exists():
 for folder in ['DEBIAN', 'usr/bin', 'usr/lib/optiplex-studio', 'usr/share/applications', 'usr/share/pixmaps', 'usr/share/doc/optiplex-studio']:
     (pkg / folder).mkdir(parents=True, exist_ok=True)
 shutil.copy2(root / 'build/optiplex-studio', pkg / 'usr/bin/optiplex-studio')
-for filename in ['app.py', 'core.py', 'project_helper.py', 'project_client.py', 'project_ui.py', 'desktop_helper.py', 'godot_focus.py', 'file_browser.py', 'session_helper.py', 'session_ui.py', 'style.css']:
+for filename in ['app.py', 'core.py', 'project_helper.py', 'project_client.py', 'project_ui.py', 'desktop_helper.py', 'godot_focus.py', 'file_browser.py', 'session_helper.py', 'session_ui.py', 'local_workspace.py', 'style.css']:
     shutil.copy2(root / 'studio' / filename, pkg / 'usr/lib/optiplex-studio' / filename)
 for path, destination in icons:
     (pkg / destination).mkdir(parents=True, exist_ok=True)
