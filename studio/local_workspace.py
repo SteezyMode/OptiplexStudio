@@ -73,15 +73,23 @@ def command(action, name):
         if not (path / "project.godot").is_file():
             raise ValueError("Select a Godot project before opening its editor.")
         return [binary("godot"), "--editor", "--path", str(path)]
+    if action in ("blender", "lmms"):
+        # These programs don't accept a generic Godot project argument. Start
+        # from the selected project directory without inventing a source file.
+        return [binary(action)]
     raise ValueError("Unsupported local Studio action.")
 
 
-def start_godot(name):
-    """Start Godot once with a private bounded launch log.
+def start_application(action, name):
+    """Start a native program from an existing project with private diagnostics.
 
-    A returned message confirms only process startup, not a rendered editor.
+    Launch success is not proof of a graphical window or of asset roundtrips.
     """
-    args = command("edit", name)
+    labels = {"edit": "Godot editor", "blender": "Blender", "lmms": "LMMS"}
+    filenames = {"edit": "godot", "blender": "blender", "lmms": "lmms"}
+    if action not in labels:
+        raise ValueError("Unsupported native application launch.")
+    args = command(action, name)
     state = Path(os.environ.get("XDG_STATE_HOME", "")) if os.environ.get("XDG_STATE_HOME") else Path.home() / ".local/state"
     if not state.is_absolute():
         state = Path.home() / ".local/state"
@@ -89,7 +97,7 @@ def start_godot(name):
     if directory.is_symlink():
         raise RuntimeError("Studio diagnostics directory cannot be a symlink.")
     directory.mkdir(parents=True, exist_ok=True, mode=0o700)
-    logfile = directory / "godot-launch.log"
+    logfile = directory / (filenames[action] + "-launch.log")
     flags = os.O_CREAT | os.O_WRONLY | os.O_TRUNC | os.O_NOFOLLOW
     try:
         fd = os.open(logfile, flags, 0o600)
@@ -101,7 +109,11 @@ def start_godot(name):
         try:
             status = process.wait(timeout=0.35)
         except subprocess.TimeoutExpired:
-            return "Godot editor started for " + name + "."
-        raise RuntimeError(f"Godot exited immediately (code {status}). See {logfile} for details.")
+            return labels[action] + " started for " + name + "."
+        raise RuntimeError(f"{labels[action]} exited immediately (code {status}). See {logfile} for details.")
     except OSError as exc:
-        raise RuntimeError(f"Godot could not be launched: {exc}. See {logfile} for details.") from exc
+        raise RuntimeError(f"{labels[action]} could not be launched: {exc}. See {logfile} for details.") from exc
+
+
+def start_godot(name):
+    return start_application("edit", name)
