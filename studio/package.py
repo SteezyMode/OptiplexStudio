@@ -67,7 +67,7 @@ Maintainer: OptiPlex Studio <local@localhost>
 Depends: libc6 (>= 2.34), python3, python3-gi, gir1.2-gtk-3.0, librsvg2-common, openssh-client, gvfs-backends, gvfs-fuse, x-terminal-emulator, tmux, ca-certificates
 Recommends: gir1.2-ayatanaappindicator3-0.1, wmctrl, chromium | google-chrome-stable | brave-browser
 Description: Native GTK3 OptiPlex Studio desktop
- Independent creative project and Codex workspace using Tailscale SSH.
+ Locally installed creative workspace with project-scoped Codex sessions.
 ''')
 for item in pkg.rglob('*'):
     item.chmod(0o755 if item.is_dir() or item == pkg / 'usr/bin/optiplex-studio' else 0o644)
