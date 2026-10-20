@@ -87,7 +87,7 @@ class SessionUI:
             state['loading'] = True
             for widget in (scope, more, resume):
                 widget.set_sensitive(False)
-            status.set_text('Reading Codex sessions over Tailscale SSH…')
+            status.set_text('Reading Codex sessions for this project…')
             def done(page, error):
                 if not state['alive']:
                     return

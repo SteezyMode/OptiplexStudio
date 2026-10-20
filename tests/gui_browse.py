@@ -8,11 +8,14 @@ from gi.repository import Gtk,GLib,Gio
 import app,project_client,project_helper,file_browser
 
 fixture=tempfile.TemporaryDirectory(prefix='studio-browser-fixture-')
-base=Path(fixture.name)
+# Exercise actual native project URI resolution; do not mock away policy checks.
+os.environ['HOME']=fixture.name
+base=Path(fixture.name)/'StudioProjects/Godot'
+base.mkdir(parents=True)
 project_helper.create_project(base,'game')
 project_client.request=lambda config,project,operation,progress=None,**fields: project_helper.handle(dict(fields,version=1,project=project,operation=operation),base)
 app.core.projects=lambda config:[{'name':'game','type':'Godot'}]
-s=app.Studio();s.config={'host':'100.100.100.101','user':'optiplex'}
+s=app.Studio();s.config={'mode':'local'}
 phase=['ready'];errors=[];actions=[];started=time.monotonic()
 original_init=file_browser.RemoteFolder.__init__
 def init(self,parent,uri,finished,status):
@@ -71,11 +74,11 @@ def drive():
             app.core.run_action=lambda config,action,name,**kwargs:actions.append((action,name,kwargs)) or 'Fixture action routed'
             phase[0]='ai-visible'
         elif phase[0]=='ai-visible':
-            names=('New Codex Session','Resume Session…','Codex Conversation Picker','Review Changes','Explain Project','Fix Godot Errors','Validate Project')
+            names=('Open Codex Workspace','Resume Session…','Codex Conversation Picker','Review Changes','Explain Project','Fix Godot Errors','Validate Project')
             for name in names:
                 button=next(w for w in children(s.window) if isinstance(w,Gtk.Button) and w.get_label()==name)
                 assert button.get_mapped() and button.get_sensitive(),name
-            phase[0]='new-codex';later(lambda:click('New Codex Session'))
+            phase[0]='new-codex';later(lambda:click('Open Codex Workspace'))
         elif phase[0]=='new-codex' and not s.busy:
             assert actions[-1][:2]==('code','game')
             phase[0]='review';later(lambda:click('Review Changes'))

@@ -1,0 +1,69 @@
+# Native Studio setup contract — design and current evidence
+
+**Status: proposal / partial implementation, not a finished installer.** Tracks [release-priority issue #27](https://github.com/SteezyMode/OptiplexStudio/issues/27) and the unchanged [frozen v1 contract #3](https://github.com/SteezyMode/OptiplexStudio/issues/3).
+
+## User-level contract
+
+1. **Install Studio** using one documented package path on supported amd64 Linux. Do not require a terminal full of manual project-specific setup steps.
+2. **Open Studio** and either create or open a project. Native-first operation must not require Wolf, Moonlight, Tailscale, Docker, a public server, or a second account.
+3. **Use Codex** on the selected project with explicit user authorization, visible errors, and recoverable project/conversation context.
+4. **Make an asset or soundtrack** with Blender and LMMS; preserve editable source and transfer standard GLB/OGG or WAV into the same Godot project.
+5. **Reopen/recover** after closing Studio, replacing a supported app version, or restoring data from backup.
+
+All five steps need real acceptance tests. None should be described as working solely because an executable exists.
+
+## Engineering model
+
+- **Separate responsibilities:** (a) read-only environment detection, (b) explicit user-approved tool installation/configuration, (c) per-project launch/adapters, (d) integration smoke tests, (e) persistence/backup and restore. Never bury installation or migration in a diagnostic.
+- **One preferred default per capability:** Godot, Blender, Codex, LMMS for the initial in-house beta. Optional creative tools are tracked separately, not prerequisites.
+- **Native first:** honor existing executable installations (including user-managed standalone archives/AppImages), prefer documented official/pinned packages when installing, and avoid silent Flatpak, container, system-service or system-wide configuration changes.
+- **Portable identity:** project, home and binary paths are discovered/configured, not tied to `/home/optiplex` or Wolf-specific `/projects`. Local project paths are canonical; remote paths require an explicit mapping.
+- **Reversible state:** approved installs must be idempotent, existing projects are not overwritten, errors remain actionable, rollback is documented, and no installer adjusts Jellyfin/Wolf/NOW/Tailscale or active services.
+- **Security:** Codex remains project-scoped, uses its normal sandbox/approval policy, doesn't automatically install MCP bridges or start unrestricted ports; installation is explicit and reviewable.
+- **Testability:** disposable Ubuntu/Pop!_OS representative installation + packaging CI + actual GUI/user playtest. A simulated CLI test is evidence of detection logic only.
+
+## First small implementation: read-only native preflight
+
+`tools/native_preflight.py` discovers executable candidates for the core four in conventional install paths and legacy user-managed `~/StudioProjects/.tools` staging. It prints a concise report, offers `--json` for future setup UI use, returns nonzero when a tool is missing, and **does not install, connect, launch or modify anything**.
+
+Example (diagnostic only; not a requested permanent user setup step):
+
+```sh
+python3 tools/native_preflight.py
+```
+
+The preflight intentionally reports *executable presence*, not actual health, installed version, export support, MCP connection or project readiness. The published v0.3.0 client was SSH/Wolf-oriented; this development branch begins replacing those routes with native local project and Codex/Godot operations. **The new local runtime, native asset workflows and installation are not yet fully accepted.**
+
+## Next engineering slices — do in order
+
+1. Verify preflight against isolated fixture tests/CI; document actual observed machine state without assuming it is a clean installation.
+2. Add a **local core-four launch adapter** with scoped project paths and explicit readiness/error handling. Choose supported Godot/Blender/LMMS CLI invocations after inspecting their exact installed help/version output in a disposable environment. Reuse project-aware Codex behavior; don't create parallel agents.
+3. Add a controlled, non-destructive installation plan (pinned upstream sources + checksums, prerequisites, platform checks, clear opt-in, rollback), then test on a fresh disposable Linux system.
+4. Prove a freshly created project accepts an editable Blender asset and LMMS audio and plays in Godot. Visually review real output.
+5. Prove off-host backup and isolated restore, clean-restart/reconnection and Codex resume. Only then mark the frozen milestone complete.
+
+**Not part of this task:** Cyclops, Material Maker, Zed, Pixelorama, GdUnit4, new editor/GUI redesign, speculative new MCP frameworks, or a polished wizard before the backend is demonstrably stable.
+
+## Critical clarification: there is no Studio "remote mode"
+
+Per [accepted ADR-001](ADR-001-LOCAL-FIRST-SHARED-STUDIO-RUNTIME.md), **Studio runs on the workstation and uses its workstation-resident project/runtime**. Remote viewing through OptiPlex NOW is a presentation concern, not a Studio connection setting.
+
+- **Physical workstation:** normal local Studio GUI.
+- **Wolf/NOW desktop on the same workstation:** another graphical Studio frontend accessing the same host-owned project/task runtime through scoped, authenticated inter-process communication. This shared service boundary remains to be implemented and tested; simply using `/projects` is insufficient.
+- **Headless tasks:** owned by the host runtime, not by whichever GTK window launched them.
+- **Legacy client:** released Studio v0.3.0 and some source helper functions previously let a *different computer* use Tailscale/SSH and Moonlight to reach an OptiPlex. That was a bootstrap implementation, **not** a supported long-term Studio workflow. Existing installed clients remain unchanged by this branch; the new GTK path should not display a local/remote selector. Legacy helper code is retained temporarily only for safe, test-driven retirement.
+- **Future separate cross-machine frontend:** not in v1 scope, and would need a different authenticated protocol; not equivalent to NOW streaming.
+
+**Non-goal:** preserve remote-client UI or accidentally create two sets of Codex processes, projects or preferences. No Studio release is ready until a single canonical host runtime is demonstrated.
+
+## Beta session backend checkpoint — 2026-10-20
+
+Development PR #28 now includes a tested **host-owned, project-scoped tmux Codex workspace** adapted from the older draft PR #8:
+
+- `Open Codex Workspace` on a local Studio project creates one project-owned tmux session or attaches to the existing one.
+- A new Studio GUI process can find the same session under the same OS user. Terminal disconnection detaches; it does not explicitly kill the Codex process. Closing Codex itself ends the underlying command/session, at which point saved Codex conversation history is the recovery path.
+- Existing project-policy, project `AGENTS.md` and Codex workspace-write/on-request approvals remain authoritative. Reusing a live session never injects arbitrary keystrokes or launches a second agent to service a new saved-conversation selection.
+- `tmux` is an explicit Debian dependency. Running Codex without tmux is not a supported persistent-workspace mode.
+- **CI green is not live acceptance.** The current tests use a fake tmux runner and isolated project fixtures; a real native GUI terminal/PTY test, Codex authentication, close/reopen, real terminal detachment and the eventual Wolf frontend sharing the *same host-owned* agent remain unverified.
+
+**Do not attempt a complete Mac mini clean-install acceptance yet.** The project creation/session slices alone do not install or integrate Godot, Blender, Codex and LMMS. The Mac mini is a good disposable end-user test target after native creative-tool adapters, first-run dependency guidance, and the release-candidate package exist. Do not switch it to Flatpaks or modify existing projector/media services as part of the setup.

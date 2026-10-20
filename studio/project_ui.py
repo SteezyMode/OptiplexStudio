@@ -174,7 +174,7 @@ class ProjectUI:
             except Exception as exc:
                 self.remote_folder.end(error=str(exc))
         self.project_task(lambda progress: client.request(config, project, 'browse' if assets else 'browse_project'),
-                          opened, f'Checking {project} folder and SSH access…')
+                          opened, f'Checking {project} project folder…')
 
     def creative_tool(self, name, url):
         context = self.selected_context()
@@ -264,7 +264,7 @@ class ProjectUI:
         dialog.set_default_size(720, 520)
         box = dialog.get_content_area()
         box.set_border_width(12)
-        box.pack_start(self.label('Save updates only this document over SSH with a conflict check. No commit is made.', 'helper'), False, False, 6)
+        box.pack_start(self.label('Save only this document with a conflict check. No commit is made.', 'helper'), False, False, 6)
         scroll = Gtk.ScrolledWindow()
         text = Gtk.TextView()
         text.set_monospace(True)

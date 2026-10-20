@@ -7,6 +7,6 @@ build/optiplex-studio: studio/launcher.c
 	$(CC) $(CFLAGS) -Wno-unused-parameter $< -o $@
 check: all
 	/usr/bin/python3 -m unittest discover -s tests -v
-	/usr/bin/python3 -m py_compile studio/app.py studio/core.py studio/project_helper.py studio/project_client.py studio/project_ui.py studio/desktop_helper.py studio/godot_focus.py studio/file_browser.py studio/package.py studio/version.py studio/session_helper.py studio/session_ui.py
+	/usr/bin/python3 -m py_compile studio/app.py studio/core.py studio/project_helper.py studio/project_client.py studio/project_ui.py studio/desktop_helper.py studio/godot_focus.py studio/file_browser.py studio/package.py studio/version.py studio/local_workspace.py studio/native_tools.py studio/persistent_sessions.py studio/session_helper.py studio/session_ui.py
 package: check
 	/usr/bin/python3 studio/package.py

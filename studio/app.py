@@ -7,6 +7,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, Gio, GLib
 import core
+import local_workspace
 import project_client
 from session_ui import SessionUI
 from project_ui import ProjectUI, remembered_project, remember_project
@@ -36,13 +37,10 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
         self.sni = None
         self.tray = None
         self.busy = False
-        self.config = {'host': '', 'user': 'optiplex', 'moonlight_appimage': '', 'moonlight_app': ''}
-        try:
-            saved = json.loads(CONFIG.read_text())
-            if isinstance(saved, dict):
-                self.config.update(saved)
-        except (OSError, ValueError, TypeError):
-            pass
+        # Studio always operates on the workstation where it is installed.
+        # The old remote-client settings file is deliberately left untouched,
+        # so older published clients are unaffected by development builds.
+        self.config = {'mode': 'local'}
 
     def label(self, text, name='section'):
         label = Gtk.Label(label=text, xalign=0)
@@ -129,7 +127,7 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
         project_page.pack_start(self.label('Shared assets, notes and Git history. Browser tools download locally; use Import Assets to transfer their exports into this project.', 'helper'), False, False, 0)
         ai_page = page('AI Workspace')
         grid(ai_page, [
-            ('New Codex Session', lambda _: self.action('code'), 'project'),
+            ('Open Codex Workspace', lambda _: self.action('code'), 'project'),
             ('Resume Session…', self.session_browser, 'project'),
             ('Codex Conversation Picker', lambda _: self.action('resume'), 'project'),
             ('Copy ChatGPT Brief', lambda _: self.copy_brief(), 'project'),
@@ -138,18 +136,12 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
              'godot' if name in ('Fix Godot Errors', 'Validate Project') else 'project') for name in core.CODEX_TASKS])
         ai_page.pack_start(self.label('Codex uses the active project directory and AGENTS.md. Export and review Project Context, then attach it to ChatGPT manually.', 'helper'), False, False, 0)
         tools = page('Creative Tools')
-        self.desktop_button = self.button('Open Studio Desktop', self.open_studio_desktop, 'power')
-        tools.pack_start(self.desktop_button, False, False, 0)
-        self.connection_buttons.append(self.desktop_button)
         grid(tools, [('Godot', lambda _: self.action('edit'), 'godot'),
-                     ('Blender', lambda _: self.open_desktop_application('blender'), None),
-                     ('Krita', lambda _: self.open_desktop_application('krita'), None),
-                     ('ChatGPT in Wolf', lambda _: self.open_desktop_application('chatgpt'), None),
-                     ('Moonlight', self.open_moonlight, None)] + [
-                     (name, lambda _, n=name, u=url: self.creative_tool(n, u), None) for name, url in core.APPS])
-        tools.pack_start(self.label('Desktop applications use the existing Wolf session. Godot opens or focuses the selected Godot project. Blender and Krita can also launch independently.', 'helper'), False, False, 0)
+                     ('Blender', lambda _: self.action('blender'), 'project'),
+                     ('LMMS', lambda _: self.action('lmms'), 'project')])
+        tools.pack_start(self.label('Native tools open for the selected project. Blender and LMMS start in its folder; editable asset export/import is not yet automatic.', 'helper'), False, False, 0)
         self.transfer_progress = Gtk.ProgressBar(show_text=True)
-        self.transfer_progress.set_text('Project transfers use Tailscale SSH')
+        self.transfer_progress.set_text('Local project operations')
         body.pack_start(self.transfer_progress, False, False, 0)
         self.status = self.label('Ready', 'footer')
         self.status.set_selectable(True)
@@ -160,8 +152,6 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
         self.initialize_tray()
         self.window.show_all()
         self.refresh()
-        if not self.config.get('host'):
-            GLib.idle_add(self.settings, None)
 
     def open_url(self, url):
         config = dict(self.config)
@@ -209,7 +199,7 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
         self.combo.remove_all()
         self.selection_changed(None)
         self.refresh_button.set_sensitive(False)
-        self.status.set_text('Reading Studio Projects API…')
+        self.status.set_text('Reading local projects…' if local_workspace.is_local(config) else 'Reading Studio Projects API…')
         def done(rows, error):
             self.refreshing = False
             self.refresh_button.set_sensitive(True)
@@ -220,7 +210,7 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
                 self.rows = []
                 self.combo.remove_all()
                 self.selection_changed(None)
-                self.status.set_text('Project API unavailable: ' + error)
+                self.status.set_text(('Project discovery failed: ' if local_workspace.is_local(config) else 'Project API unavailable: ') + error)
                 return
             self.rows = rows
             self.combo.remove_all()
@@ -230,7 +220,7 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
                 self.combo.set_active(0 if rows else -1)
             self.status.set_text(f'{len(rows)} projects loaded.' if rows else 'No projects yet. Create a project to begin.')
         def discover():
-            api_rows = core.projects(config)
+            api_rows = [] if local_workspace.is_local(config) else core.projects(config)
             local_rows = project_client.request(config, 'Studio', 'list_projects')
             merged = {p['name']: dict(p, type=p.get('type', 'Godot')) for p in api_rows}
             merged.update({p['name']: p for p in local_rows})
@@ -245,14 +235,18 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
         p = next((p for p in self.rows if p['name'] == name), {})
         for button in getattr(self, 'godot_buttons', []):
             button.set_sensitive(selected and p.get('type', 'Godot') == 'Godot' and not self.busy)
-        try:
-            core.ssh_args(self.config, 'edit', 'Studio')
-            connection_ready = True
-        except ValueError:
-            connection_ready = False
+        if local_workspace.is_local(self.config):
+            connection_ready = False  # Streaming shortcuts remain remote-only.
+        else:
+            try:
+                core.ssh_args(self.config, 'edit', 'Studio')
+                connection_ready = True
+            except ValueError:
+                connection_ready = False
         for button in getattr(self, 'connection_buttons', []):
-            button.set_sensitive(connection_ready and not self.busy)
-        self.create_button.set_sensitive(connection_ready and not self.busy)
+            local_browser = local_workspace.is_local(self.config) and button.get_label() == 'Open ChatGPT'
+            button.set_sensitive((connection_ready or local_browser) and not self.busy)
+        self.create_button.set_sensitive((connection_ready or local_workspace.is_local(self.config)) and not self.busy)
         if hasattr(self.combo, 'set_sensitive'):
             self.combo.set_sensitive(not self.busy)
         if hasattr(self, 'active_label'):
@@ -277,14 +271,22 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
             self.status.set_text('Select a Godot project to open Godot.')
             return
         try:
-            core.ssh_args(self.config, action, name)
-        except ValueError as exc:
+            if local_workspace.is_local(self.config):
+                if action != 'new':
+                    local_workspace.project_path(name)
+            else:
+                core.ssh_args(self.config, action, name)
+        except (ValueError, OSError) as exc:
             self.status.set_text(str(exc))
             return
         self.busy = True
         self.create_button.set_sensitive(False)
         self.selection_changed(None)
-        self.status.set_text('Opening Codex terminal…' if action in ('code', 'resume') else 'Connecting Moonlight and waiting for Studio Desktop…' if action == 'edit' else 'Waiting for remote Studio…')
+        self.status.set_text('Opening Codex terminal…' if action in ('code', 'resume') else
+                             'Opening native ' + {'edit': 'Godot', 'blender': 'Blender', 'lmms': 'LMMS'}[action] + '…'
+                             if action in ('edit', 'blender', 'lmms') and local_workspace.is_local(self.config) else
+                             'Connecting Moonlight and waiting for Studio Desktop…' if action == 'edit' else
+                             'Creating project…' if action == 'new' else 'Waiting for remote Studio…')
         config = dict(self.config)
         stream_errors = []
         terminal_released = [False]
@@ -368,34 +370,14 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
             dialog.destroy()
 
     def settings(self, _):
-        dialog = Gtk.Dialog(title='Studio connection', transient_for=self.window, modal=True)
-        dialog.add_buttons('CANCEL', Gtk.ResponseType.CANCEL, 'SAVE', Gtk.ResponseType.OK)
-        box = dialog.get_content_area()
-        box.set_border_width(18)
-        entries = {}
-        for key, title in [('host', 'OptiPlex Tailscale IPv4 address (100.64.0.0/10)'), ('user', 'SSH user'), ('moonlight_appimage', 'Moonlight AppImage path (optional; blank for automatic detection)'), ('moonlight_app', 'Wolf desktop app title (blank = OptiPlex Studio Desktop)')]:
-            box.pack_start(self.label(title, 'helper'), False, False, 5)
-            entries[key] = Gtk.Entry(text=str(self.config.get(key, '')))
-            box.pack_start(entries[key], False, False, 5)
-        box.pack_start(self.label('Uses existing SSH keys and trusted host keys.\nComplete Tailscale and SSH pairing using your existing setup.\nNo passwords or NOW settings are stored here.', 'helper'), False, False, 8)
-        dialog.show_all()
-        while dialog.run() == Gtk.ResponseType.OK:
-            candidate = dict(self.config)
-            candidate.update({k: e.get_text().strip() for k, e in entries.items()})
-            try:
-                core.ssh_args(candidate, 'edit', 'validation')
-                CONFIG.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-                temp = CONFIG.with_suffix('.tmp')
-                fd = os.open(temp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o600)
-                with os.fdopen(fd, 'w') as out:
-                    json.dump(candidate, out)
-                temp.replace(CONFIG)
-                self.config = candidate
-                self.status.set_text('Studio connection saved.')
-                self.refresh()
-                break
-            except (ValueError, OSError) as exc:
-                self.status.set_text(str(exc))
+        dialog = Gtk.MessageDialog(transient_for=self.window, modal=True,
+                                   message_type=Gtk.MessageType.INFO,
+                                   buttons=Gtk.ButtonsType.CLOSE,
+                                   text='Studio uses this computer.')
+        dialog.format_secondary_text(
+            'Projects: ' + str(local_workspace.root()) +
+            '\\nCodex and Godot launch locally. Remote desktop access is managed separately by OptiPlex NOW.')
+        dialog.run()
         dialog.destroy()
 
     def restore(self):
@@ -426,7 +408,7 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
     def initialize_tray(self):
         self.menu = Gtk.Menu()
         self.tray_project_items = []
-        for text, callback in [('Open OptiPlex Studio', self.restore), ('Open Studio Desktop', lambda: (self.restore(), self.open_studio_desktop())), ('New Codex conversation', lambda: (self.restore(), self.action('code'))), ('Resume conversation', lambda: (self.restore(), self.session_browser())), ('Studio workspace', lambda: self.open_url('https://studio.monumentrisk.com')), ('Settings', lambda: (self.restore(), self.settings(None))), ('Quit', self.quit)]:
+        for text, callback in [('Open OptiPlex Studio', self.restore), ('New Codex conversation', lambda: (self.restore(), self.action('code'))), ('Resume conversation', lambda: (self.restore(), self.session_browser())), ('Settings', lambda: (self.restore(), self.settings(None))), ('Quit', self.quit)]:
             item = Gtk.MenuItem(label=text)
             item.connect('activate', lambda _, cb=callback: cb())
             self.menu.append(item)

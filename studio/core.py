@@ -245,6 +245,7 @@ def terminal_args(command):
         'konsole': ['--nofork', '-e'],
         'xfce4-terminal': ['--disable-server', '-x'],
         'xterm': ['-e'],
+        'cosmic-term': ['--'],
     }
     candidates = []
     alternative = shutil.which('x-terminal-emulator')
@@ -434,20 +435,33 @@ def wait_for_studio_desktop(config, project, on_progress=None, stream_errors=Non
 
 
 def run_action(config, action, name, on_started=None, on_error=None, on_progress=None, session_id=None, prompt=None, all_sessions=False):
-    cmd = ssh_args(config, action, name, action in ('code', 'resume'))
+    local = config.get('mode') == 'local'
+    if local and action in ('edit', 'blender', 'lmms'):
+        import local_workspace
+        return local_workspace.start_application(action, name)
+    if not local:
+        cmd = ssh_args(config, action, name, action in ('code', 'resume'))
     if action in ('code', 'resume'):
         if session_id is not None:
             import uuid
             if action != 'resume':
                 raise ValueError('Session ID is only valid for resume.')
             session_id = str(uuid.UUID(session_id))
-            cmd[-1] += ' ' + shlex.quote(session_id)
-        elif all_sessions and action == 'resume':
-            cmd[-1] += ' --all'
-        if prompt is not None:
-            if action != 'code' or prompt not in CODEX_TASKS.values():
-                raise ValueError('Unsupported Codex task.')
-            cmd[-1] += ' ' + shlex.quote(prompt)
+        if prompt is not None and (action != 'code' or prompt not in CODEX_TASKS.values()):
+            raise ValueError('Unsupported Codex task.')
+        if local:
+            from persistent_sessions import TmuxSessions
+            backend = TmuxSessions()
+            backend.ensure(name, session_id=session_id, prompt=prompt,
+                           all_sessions=(all_sessions and action == 'resume'))
+            cmd = backend.attach_argv(name)
+        else:
+            if session_id is not None:
+                cmd[-1] += ' ' + shlex.quote(session_id)
+            elif all_sessions and action == 'resume':
+                cmd[-1] += ' --all'
+            if prompt is not None:
+                cmd[-1] += ' ' + shlex.quote(prompt)
         # Terminal emulators may hide their child's exit code. A private file
         # carries the SSH result independently of emulator exit-code semantics.
         with tempfile.TemporaryDirectory(prefix='optiplex-studio-') as directory:
@@ -462,13 +476,16 @@ def run_action(config, action, name, on_started=None, on_error=None, on_progress
                     on_started()
                 stdout, stderr = process.communicate()
             if not status.exists():
-                raise RuntimeError('Terminal failed to run SSH/Codex: ' +
+                raise RuntimeError(('Terminal failed to run Codex locally: ' if local else 'Terminal failed to run SSH/Codex: ') +
                                    (stderr or stdout or 'No remote exit status was received.')[-3000:])
             result = int(status.read_text())
             if result:
+                if local:
+                    raise RuntimeError(f'Codex workspace terminal exited with code {result}. '
+                                       'Check authentication and project permissions.')
                 raise RuntimeError(f'SSH/Codex launch or session failed (exit {result}). '
                                    'Check the Tailscale connection, trusted SSH host key, SSH key and remote Codex installation.')
-            return 'Codex conversation closed.'
+            return ('Codex terminal detached; reconnect to the same project workspace.' if local else 'Codex conversation closed.')
     if action == 'edit':
         import project_client
         stream_errors = []
