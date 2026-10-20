@@ -1,6 +1,6 @@
 """Read-only session listing through Codex's documented app-server protocol.
 
-Bundled into the SSH helper; never reads or edits rollout JSONL/SQLite files.
+Works through local project operations or the older SSH helper.\nNever reads or edits rollout JSONL/SQLite files.
 """
 def list_codex_sessions(base, project, request, codex_binary=None):
     import json
