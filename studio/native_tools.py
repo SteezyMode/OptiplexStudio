@@ -56,7 +56,7 @@ def resolve(name, home=None, path_finder=shutil.which):
         return paths[0]
     if name not in TOOLS:
         raise ValueError("Unsupported Studio tool.")
-    raise RuntimeError(DISPLAY[name] + " is not installed or executable. Use Studio setup to configure it.")
+    raise RuntimeError(DISPLAY[name] + " is not installed or executable on this computer. See the Studio setup instructions.")
 
 
 def inventory(home=None, path_finder=shutil.which):
