@@ -14,7 +14,7 @@ class RemoteFolder:
         self.timer = None
 
     def start(self):
-        if 'sftp' not in Gio.Vfs.get_default().get_supported_uri_schemes():
+        if self.uri.startswith('sftp:') and 'sftp' not in Gio.Vfs.get_default().get_supported_uri_schemes():
             self.end(error='SFTP support is unavailable. Install gvfs-backends and gvfs-fuse, then restart Studio.')
             return
         self.timer = GLib.timeout_add_seconds(90, self.timeout)
@@ -82,7 +82,7 @@ class RemoteFolder:
         if local and os.path.isdir(local) and manager:
             try:
                 if manager.launch([Gio.File.new_for_path(local)], None):
-                    self.end(message='Opened mounted project folder in ' + manager.get_display_name() + ': ' + self.uri)
+                    self.end(message='Opened project folder in ' + manager.get_display_name() + ': ' + self.uri)
                     return
             except GLib.Error:
                 pass  # The native GTK browser still works without a URI handler.
@@ -103,7 +103,7 @@ class RemoteFolder:
         try:
             if not dialog.set_current_folder_file(self.file):
                 raise RuntimeError('GTK could not display the mounted SFTP folder.')
-            self.status('Browsing remote project files. Select a file to save a local copy.')
+            self.status('Browsing project files. Select a file to save a local copy.')
             while dialog.run() == Gtk.ResponseType.OK:
                 selected = dialog.get_file()
                 if selected is not None:

@@ -39,25 +39,23 @@ class DirectDesktop(unittest.TestCase):
         self.assertEqual(spawn.call_args.kwargs['env']['APPIMAGE_EXTRACT_AND_RUN'], '1')
         self.assertFalse(any(flag in spawn.call_args.args[0] for flag in ('--resolution', '--bitrate', '--decoder')))
 
-    def test_standalone_action_needs_no_project_or_remote_command(self):
+    def test_native_action_needs_no_project_or_remote_command(self):
         from test_projects import GUIActions
         fake = GUIActions().fake()
-        fake.config = dict(CONFIG)
         fake.rows = []
         fake.combo.get_active_id.return_value = None
-        with patch('project_ui.core.launch_studio_desktop', return_value='Desktop connected') as stream, patch('project_ui.client.request') as remote, patch('project_ui.GLib.idle_add'):
-            fake.open_studio_desktop()
-        self.assertEqual(stream.call_args.args, (CONFIG,))
+        with patch('native_tools.launch', return_value='Blender launched locally.') as launch, patch('project_ui.client.request') as remote:
+            fake.open_desktop_application('blender')
+        launch.assert_called_once_with(fake.config, 'blender', None)
         remote.assert_not_called()
-        self.assertEqual(fake.status.text, 'Desktop connected')
         self.assertFalse(fake.busy)
 
-    def test_standalone_connection_failure_is_visible(self):
+    def test_native_launch_failure_is_visible(self):
         from test_projects import GUIActions
         fake = GUIActions().fake()
-        with patch('project_ui.core.launch_studio_desktop', side_effect=RuntimeError('Moonlight is not paired')), patch('project_ui.GLib.idle_add'):
-            fake.open_studio_desktop()
-        self.assertIn('not paired', fake.status.text)
+        with patch('native_tools.launch', side_effect=RuntimeError('Install Blender locally')):
+            fake.open_desktop_application('blender')
+        self.assertIn('Install Blender', fake.status.text)
         self.assertEqual(fake.last_notice[0], 'Project operation failed')
 
     def test_focus_exec_is_fixed_and_project_scoped(self):

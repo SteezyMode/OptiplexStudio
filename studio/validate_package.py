@@ -11,15 +11,15 @@ import tarfile
 import tempfile
 
 root = Path(__file__).resolve().parents[1]
-package = Path(sys.argv[1]) if len(sys.argv) > 1 else root / 'dist/optiplex-studio_0.3.0_amd64.deb'
+package = Path(sys.argv[1]) if len(sys.argv) > 1 else root / 'dist/optiplex-studio_0.4.4_amd64.deb'
 
 def field(name):
     return subprocess.check_output(['dpkg-deb', '--field', str(package), name], text=True).strip()
 
-for name, expected in {'Package': 'optiplex-studio', 'Version': '0.3.0', 'Architecture': 'amd64'}.items():
+for name, expected in {'Package': 'optiplex-studio', 'Version': '0.4.4', 'Architecture': 'amd64'}.items():
     assert field(name) == expected, (name, field(name))
 dependencies = field('Depends')
-for name in ('libc6', 'python3', 'python3-gi', 'gir1.2-gtk-3.0', 'openssh-client', 'gvfs-backends', 'gvfs-fuse', 'x-terminal-emulator', 'ca-certificates'):
+for name in ('libc6', 'python3', 'python3-gi', 'gir1.2-gtk-3.0', 'x-terminal-emulator', 'ca-certificates'):
     assert name in dependencies, 'Missing dependency: ' + name
 with tarfile.open(fileobj=io.BytesIO(subprocess.check_output(['dpkg-deb', '--ctrl-tarfile', str(package)]))) as archive:
     assert {m.name.removeprefix('./') for m in archive if m.isfile()} == {'control'}, 'Unexpected maintainer scripts'
@@ -38,7 +38,7 @@ with tarfile.open(fileobj=io.BytesIO(subprocess.check_output(['dpkg-deb', '--fsy
     assert not any('optiplex-now' in p or p.endswith('.svg') for p in files), 'Wrong application/artwork'
 
 modules = ['app.py', 'core.py', 'project_client.py', 'project_helper.py', 'project_ui.py',
-           'desktop_helper.py', 'godot_focus.py', 'file_browser.py', 'session_helper.py', 'session_ui.py', 'style.css']
+           'desktop_helper.py', 'godot_focus.py', 'file_browser.py', 'session_helper.py', 'session_ui.py', 'native_tools.py', 'portable_install.py', 'tool_environment.py', 'tools_ui.py', 'conversation_store.py', 'codex_install.py', 'codex_rpc.py', 'embedded_codex.py', 'embedded_ui.py', 'transcript.py', 'style.css']
 expected = {'usr/bin/optiplex-studio', 'usr/share/doc/optiplex-studio/README.md',
             'usr/share/applications/com.monumentrisk.OptiPlexStudio.desktop'}
 for module in modules:

@@ -69,26 +69,26 @@ class Moonlight(unittest.TestCase):
             order.append('moonlight')
             return 'Configured Desktop opened'
         with patch('project_client.request', side_effect=remote), patch('core.launch_studio_desktop', side_effect=stream):
-            self.assertIn('Configured Desktop opened', core.run_action(CONFIG, 'edit', 'game'))
+            self.assertIn('Configured Desktop opened', core.remote_run_action(CONFIG, 'edit', 'game'))
         self.assertEqual(order, ['moonlight', 'desktop_status', 'desktop'])
 
     def test_readiness_failure_prevents_godot_launch(self):
         for error in (RuntimeError('Wolf is not running'), TimeoutError('SSH timeout')):
             with patch('project_client.request', side_effect=error) as remote, patch('core.launch_studio_desktop') as stream:
                 with self.assertRaises((RuntimeError, TimeoutError)):
-                    core.run_action(CONFIG, 'edit', 'game')
+                    core.remote_run_action(CONFIG, 'edit', 'game')
                 stream.assert_called_once()
                 self.assertEqual(remote.call_args.args[2], 'desktop_status')
 
     def test_successful_creation_never_launches_moonlight(self):
         with patch('subprocess.run', return_value=subprocess.CompletedProcess([], 0, 'Created game', '')), patch('core.launch_studio_desktop') as stream:
-            self.assertEqual(core.run_action(CONFIG, 'new', 'game'), 'Created game')
+            self.assertEqual(core.remote_run_action(CONFIG, 'new', 'game'), 'Created game')
             stream.assert_not_called()
 
     def test_moonlight_error_is_distinct_from_godot_error(self):
         with patch('project_client.request', return_value={'message': 'Godot opened'}), patch('core.launch_studio_desktop', side_effect=OSError('AppImage runtime unavailable')):
             with self.assertRaisesRegex(OSError, 'AppImage runtime unavailable'):
-                core.run_action(CONFIG, 'edit', 'game')
+                core.remote_run_action(CONFIG, 'edit', 'game')
 
     def test_startup_failure_includes_moonlight_output(self):
         with patch('core.studio_stream_pid', return_value=None), patch('core.moonlight_args', return_value=['/bin/sh', '-c', 'echo "Not paired with Wolf" >&2; exit 9']):
@@ -174,7 +174,7 @@ class Moonlight(unittest.TestCase):
                     kwargs['on_error']('Moonlight failed after startup')
                     return 'connecting'
                 raise RuntimeError('Godot opened, but Moonlight not paired')
-            with patch('app.core.run_action', side_effect=launch), patch('app.GLib.idle_add', side_effect=lambda callback, *args: callback(*args)):
+            with patch('native_tools.run_action', side_effect=launch), patch('app.GLib.idle_add', side_effect=lambda callback, *args: callback(*args)):
                 app.Studio.action(fake, 'edit', 'game')
             self.assertIn('Moonlight', fake.status.text)
             self.assertNotEqual(fake.status.text, 'connecting')

@@ -1,5 +1,6 @@
 """Run fixture-only GTK checks on isolated, loopback-bound Broadway displays."""
 import os
+os.environ["STUDIO_SKIP_ONBOARDING"] = "1"
 import sys
 from pathlib import Path
 import subprocess
@@ -12,7 +13,7 @@ if '--package' in sys.argv:
     package_dir = tempfile.TemporaryDirectory(prefix='studio-unpacked-')
     package = sys.argv[sys.argv.index('--package') + 1]
     subprocess.run(['dpkg-deb', '--extract', package, package_dir.name], check=True)
-for display, script in ((':61', 'tests/gui_workflows.py'), (':62', 'tests/gui_smoke.py'), (':63', 'tests/gui_browse.py')):
+for display, script in ((':61', 'tests/gui_workflows.py'), (':62', 'tests/gui_smoke.py'), (':63', 'tests/gui_browse.py'), (':64', 'tests/gui_embedded.py')):
     with tempfile.TemporaryDirectory(prefix='studio-release-gui-') as directory:
         env = dict(os.environ, XDG_RUNTIME_DIR=directory, XDG_CONFIG_HOME=directory,
                    GSETTINGS_BACKEND='memory', GDK_BACKEND='broadway',

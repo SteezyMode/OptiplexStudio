@@ -20,7 +20,7 @@ base = Path(workspace.name) / 'Godot'
 base.mkdir()
 for name in ('game-one', 'game-two'):
     project_helper.create_project(base, name)
-project_helper.create_project(base, 'album', 'Music/Audio')
+project_helper.create_project(base, 'album', 'Studio')
 project_ui.remember_project('game-two')
 session_resumes = []
 def transport(config, project, operation, progress=None, **fields):
@@ -33,7 +33,7 @@ def transport(config, project, operation, progress=None, **fields):
 project_client.request = transport
 app.core.projects = lambda config: [{'name': name, 'branch': 'main', 'dirty': True, 'commit': 'fixture'} for name in ('game-one', 'game-two')]
 s = app.Studio()
-s.config = {'host': '100.100.100.101', 'user': 'optiplex', 'moonlight_appimage': '', 'moonlight_app': ''}
+s.config = {'projects_dir': str(base)}
 phase = ['ready']
 errors = []
 started = time.monotonic()
@@ -76,10 +76,34 @@ def drive():
                 assert s.tray.get_title() == 'OptiPlex Studio'
             assert s.active_label.get_text() == 'ACTIVE PROJECT: game-two'
             captions = {w.get_label() for w in descendants(s.window) if isinstance(w, Gtk.Button)}
-            assert {'Blockbench', 'CozyClay', 'Onionskyn', 'Krita', 'Blender', 'Import Assets', 'Share Project Context', 'Open Studio Desktop'} <= captions
+            assert {'Blockbench', 'LMMS', 'Krita', 'Blender', 'Import Assets', 'Share Project Context'} <= captions
+            assert {'New Conversation', 'Resume Conversation', 'Run', 'Review Changes', 'Fix Godot Errors', 'Validate Project'} <= captions
+            assert not s.ai_advanced.get_expanded()
+            assert not s.ai_run.get_sensitive()
+            assert not s.ai_output_area.get_children()
+            launch = s.open_embedded
+            calls = []
+            s.open_embedded = lambda *args, **kwargs: calls.append((args, kwargs, s.combo.get_active_id()))
+            s.ai_prompt.get_buffer().set_text('  ')
+            assert not s.ai_run.get_sensitive()
+            s.ai_prompt.get_buffer().set_text('Review this project\nPreserve my work.')
+            assert s.ai_run.get_sensitive()
+            s.ai_run.clicked()
+            assert calls == [((), {'prompt': 'Review this project\nPreserve my work.'}, 'game-two')]
+            s.busy = True
+            s.selection_changed(None)
+            assert not s.ai_run.get_sensitive()
+            assert not s.ai_prompt.get_sensitive()
+            s.busy = False
+            s.combo.set_active(-1)
+            assert not s.ai_run.get_sensitive()
             s.combo.set_active_id('album')
             assert all(not button.get_sensitive() for button in s.godot_buttons)
             assert all(button.get_sensitive() for button in s.project_buttons)
+            s.ai_run.clicked()
+            assert calls[-1][2] == 'album'
+            s.open_embedded = launch
+            s.ai_prompt.get_buffer().set_text('')
             s.combo.set_active_id('game-two')
             phase[0] = 'capture-main'
         elif phase[0] == 'capture-main':
@@ -87,8 +111,8 @@ def drive():
             content=s.window.get_child()
             surface=cairo.ImageSurface(cairo.FORMAT_ARGB32,content.get_allocated_width(),content.get_allocated_height())
             content.draw(cairo.Context(surface))
-            Path('build/qa').mkdir(parents=True,exist_ok=True)
-            surface.write_to_png('build/qa/project-workspace.png')
+            Path(workspace.name, 'qa').mkdir(parents=True,exist_ok=True)
+            surface.write_to_png(str(Path(workspace.name, 'qa/project-workspace.png')))
             phase[0] = 'review'
             later(s.share_context)
         elif phase[0] == 'review':
@@ -104,7 +128,7 @@ def drive():
                 surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
                 content.draw(cairo.Context(surface))
                 Path('build/qa').mkdir(parents=True, exist_ok=True)
-                surface.write_to_png('build/qa/snapshot-review.png')
+                surface.write_to_png(str(Path(workspace.name, 'qa/snapshot-review.png')))
                 phase[0] = 'save-picker'
                 dialog.response(4)
         elif phase[0] == 'save-picker':
@@ -140,10 +164,11 @@ def drive():
             s.activate()
             assert s.window.get_visible()
             phase[0] = 'sessions'
+            s.open_embedded = lambda **kwargs: session_resumes.append(('resume',s.combo.get_active_id(),{'session_id':kwargs['identifier']}))
             s.action = lambda action, name=None, **kwargs: session_resumes.append((action,name,kwargs))
             later(s.session_browser)
         elif phase[0] == 'sessions':
-            dialog = next((d for d in dialogs if d.get_title().startswith('Codex sessions')), None)
+            dialog = next((d for d in dialogs if d.get_title().startswith('Conversations')), None)
             if dialog:
                 tree=next(w for w in descendants(dialog) if isinstance(w,Gtk.TreeView))
                 if len(tree.get_model()) == 2:
@@ -151,7 +176,7 @@ def drive():
                     scope.set_active(True)
                     phase[0]='all-sessions'
         elif phase[0] == 'all-sessions':
-            dialog=next((d for d in dialogs if d.get_title().startswith('Codex sessions')),None)
+            dialog=next((d for d in dialogs if d.get_title().startswith('Conversations')),None)
             if dialog:
                 tree=next(w for w in descendants(dialog) if isinstance(w,Gtk.TreeView))
                 if len(tree.get_model()) == 4:
@@ -178,7 +203,7 @@ def drive():
                 phase[0]='created'
                 dialog.response(Gtk.ResponseType.OK)
         elif phase[0] == 'created':
-            assert session_resumes[-1] == ('new','new-album',{'template':'Music/Audio'})
+            assert session_resumes[-1] == ('new','new-album',{'template':'Studio'})
             print('GTK integration passed: templates, multiple project types, session search/all-project filtering/UUID resume, actual launcher names, remembered selection, native snapshot review/save ZIP, documentation edit/conflict token, project isolation and restoration.')
             s.quit()
             return False

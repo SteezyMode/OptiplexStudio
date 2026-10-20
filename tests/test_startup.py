@@ -30,7 +30,7 @@ class ColdStart(unittest.TestCase):
             self.assertEqual(fields, {'application': 'godot'})
             return {'message': 'Godot opened for game.'}
         with patch('core.launch_studio_desktop', side_effect=stream), patch('project_client.request', side_effect=remote), patch('core.time.monotonic', side_effect=lambda: clock[0]), patch('core.time.sleep', side_effect=lambda seconds: clock.__setitem__(0, clock[0] + seconds)):
-            result = core.run_action(CONFIG, 'edit', 'game', on_progress=messages.append)
+            result = core.remote_run_action(CONFIG, 'edit', 'game', on_progress=messages.append)
         self.assertEqual(calls, ['Moonlight', 'desktop_status', 'desktop_status', 'desktop_status', 'desktop'])
         self.assertIn('Godot opened', result)
         self.assertTrue(any('warming up' in message for message in messages))
@@ -38,7 +38,7 @@ class ColdStart(unittest.TestCase):
     def test_moonlight_failure_never_runs_remote_operations(self):
         with patch('core.launch_studio_desktop', side_effect=RuntimeError('Pairing failed')), patch('project_client.request') as remote:
             with self.assertRaisesRegex(RuntimeError, 'Pairing failed'):
-                core.run_action(CONFIG, 'edit', 'game')
+                core.remote_run_action(CONFIG, 'edit', 'game')
             remote.assert_not_called()
 
     def test_readiness_timeout_never_launches_godot(self):
@@ -89,7 +89,7 @@ class HelperSource(unittest.TestCase):
             return focus if path.name == 'godot_focus.py' else helper
         # A real local process exercises quoting and stdio without SSH or Docker.
         with patch('core.ssh_args', return_value=['/bin/sh', '-c', 'replaced']), patch('pathlib.Path.read_text', new=read):
-            result = project_client.request(CONFIG, 'game', 'desktop', application='godot')
+            result = project_client.remote_request(CONFIG, 'game', 'desktop', application='godot')
         self.assertEqual(result['focus'], focus)
 
     def test_readiness_command_uses_desktop_helper_not_asset_helper(self):
@@ -97,7 +97,7 @@ class HelperSource(unittest.TestCase):
             self.assertEqual(path.name, 'desktop_helper.py')
             return "import json,sys\nrequest=json.load(sys.stdin)\nprint(json.dumps({'ok':True,'result':{'operation':request['operation']}}))"
         with patch('core.ssh_args', return_value=['/bin/sh', '-c', 'replaced']), patch('pathlib.Path.read_text', new=read):
-            result = project_client.request(CONFIG, 'game', 'desktop_status', request_timeout=5)
+            result = project_client.remote_request(CONFIG, 'game', 'desktop_status', request_timeout=5)
         self.assertEqual(result['operation'], 'desktop_status')
 
 class Identity(unittest.TestCase):

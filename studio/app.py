@@ -8,6 +8,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, Gio, GLib
 import core
 import project_client
+from tools_ui import ToolsUI
 from session_ui import SessionUI
 from project_ui import ProjectUI, remembered_project, remember_project
 
@@ -26,7 +27,7 @@ def configure_identity():
 ROOT = Path(__file__).resolve().parent
 CONFIG = Path(os.environ.get('XDG_CONFIG_HOME', Path.home() / '.config')) / 'optiplex-studio' / 'config.json'
 
-class Studio(SessionUI, ProjectUI, Gtk.Application):
+class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
     def __init__(self):
         configure_identity()
         super().__init__(application_id=APP_ID, flags=Gio.ApplicationFlags.FLAGS_NONE)
@@ -36,7 +37,7 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
         self.sni = None
         self.tray = None
         self.busy = False
-        self.config = {'host': '', 'user': 'optiplex', 'moonlight_appimage': '', 'moonlight_app': ''}
+        self.config = {'projects_dir': str(Path.home() / 'StudioProjects')}
         try:
             saved = json.loads(CONFIG.read_text())
             if isinstance(saved, dict):
@@ -82,7 +83,8 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
         head = Gtk.Box(spacing=12)
         title = self.label('OPTIPLEX STUDIO', 'title')
         head.pack_start(title, True, True, 0)
-        head.pack_end(self.button('SETTINGS', self.settings), False, False, 0)
+        self.settings_button = self.button('SETTINGS', self.settings)
+        head.pack_end(self.settings_button, False, False, 0)
         body.pack_start(head, False, False, 0)
         body.pack_start(Gtk.Separator(), False, False, 0)
         row = Gtk.Box(spacing=8)
@@ -101,17 +103,20 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
         tabs = Gtk.Notebook()
         body.pack_start(tabs, True, True, 0)
         self.project_buttons, self.godot_buttons, self.connection_buttons = [], [], []
-        def page(title):
+        def page(title, scroll=True):
             box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, border_width=10)
-            scroller = Gtk.ScrolledWindow()
-            scroller.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-            scroller.add(box)
-            tabs.append_page(scroller, Gtk.Label(label=title))
+            if scroll:
+                scroller = Gtk.ScrolledWindow()
+                scroller.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+                scroller.add(box)
+                tabs.append_page(scroller, Gtk.Label(label=title))
+            else:
+                tabs.append_page(box, Gtk.Label(label=title))
             return box
-        def grid(box, entries, columns=2):
+        def grid(box, entries, columns=2, button_name='power'):
             layout = Gtk.Grid(column_spacing=8, row_spacing=8, column_homogeneous=True)
             for index, (caption, callback, prerequisite) in enumerate(entries):
-                button = self.button(caption, callback, 'power')
+                button = self.button(caption, callback, button_name)
                 if prerequisite == 'project':
                     self.project_buttons.append(button)
                 elif prerequisite == 'godot':
@@ -121,35 +126,24 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
                 button.set_sensitive(False)
                 layout.attach(button, index % columns, index // columns, 1, 1)
             box.pack_start(layout, False, False, 0)
-        project_page = page('Project')
+        project_page = page('Overview')
         grid(project_page, [
             ('Project Files', self.browse_project, 'project'), ('Import Assets', self.import_assets, 'project'),
             ('Browse Assets', self.browse_assets, 'project'), ('Project Documents', self.documents, 'project'),
+            ('AI Memory', self.ai_memory, 'project'),
             ('Share Project Context', self.share_context, 'project')])
-        project_page.pack_start(self.label('Shared assets, notes and Git history. Browser tools download locally; use Import Assets to transfer their exports into this project.', 'helper'), False, False, 0)
-        ai_page = page('AI Workspace')
-        grid(ai_page, [
-            ('New Codex Session', lambda _: self.action('code'), 'project'),
-            ('Resume Session…', self.session_browser, 'project'),
-            ('Codex Conversation Picker', lambda _: self.action('resume'), 'project'),
-            ('Copy ChatGPT Brief', lambda _: self.copy_brief(), 'project'),
-            ('Open ChatGPT', self.open_chatgpt, None)] + [
-            (name, lambda _, n=name: self.action('code', prompt=core.CODEX_TASKS[n]),
-             'godot' if name in ('Fix Godot Errors', 'Validate Project') else 'project') for name in core.CODEX_TASKS])
-        ai_page.pack_start(self.label('Codex uses the active project directory and AGENTS.md. Export and review Project Context, then attach it to ChatGPT manually.', 'helper'), False, False, 0)
+        project_page.pack_start(self.label('Local assets, notes and Git history. Import files into the selected project.', 'helper'), False, False, 0)
+        ai_page = page('AI Workspace', scroll=False)
+        self.build_ai_workspace(ai_page, grid)
         tools = page('Creative Tools')
-        self.desktop_button = self.button('Open Studio Desktop', self.open_studio_desktop, 'power')
-        tools.pack_start(self.desktop_button, False, False, 0)
-        self.connection_buttons.append(self.desktop_button)
-        grid(tools, [('Godot', lambda _: self.action('edit'), 'godot'),
-                     ('Blender', lambda _: self.open_desktop_application('blender'), None),
-                     ('Krita', lambda _: self.open_desktop_application('krita'), None),
-                     ('ChatGPT in Wolf', lambda _: self.open_desktop_application('chatgpt'), None),
-                     ('Moonlight', self.open_moonlight, None)] + [
-                     (name, lambda _, n=name, u=url: self.creative_tool(n, u), None) for name, url in core.APPS])
-        tools.pack_start(self.label('Desktop applications use the existing Wolf session. Godot opens or focuses the selected Godot project. Blender and Krita can also launch independently.', 'helper'), False, False, 0)
+        tools.pack_start(self.label('Launch applications for the active Studio project. Install and configure applications in Settings.', 'helper'), False, False, 0)
+        grid(tools, [('Godot', lambda _: self.action('edit'), 'godot')] + [
+            (('LMMS' if name == 'lmms' else name.title()), lambda _, n=name: self.open_desktop_application(n), None)
+            for name in ('blender', 'blockbench', 'lmms', 'krita')])
+        grid(tools, [('VSCodium · Open Current Project', lambda _: self.open_desktop_application('vscodium'), 'project')])
+        tools.pack_start(self.label('Native tools open locally. Configure executable paths in Settings; no server is required.', 'helper'), False, False, 0)
         self.transfer_progress = Gtk.ProgressBar(show_text=True)
-        self.transfer_progress.set_text('Project transfers use Tailscale SSH')
+        self.transfer_progress.set_text('Local project operations')
         body.pack_start(self.transfer_progress, False, False, 0)
         self.status = self.label('Ready', 'footer')
         self.status.set_selectable(True)
@@ -160,8 +154,117 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
         self.initialize_tray()
         self.window.show_all()
         self.refresh()
-        if not self.config.get('host'):
-            GLib.idle_add(self.settings, None)
+        self.refresh_tool_health()
+        if not self.config.get('native_setup_seen') and not os.environ.get('STUDIO_SKIP_ONBOARDING'):
+            GLib.idle_add(self.tools_setup)
+
+    def refresh_tool_health(self):
+        """Update Settings warning only for errors/unfinished Codex setup."""
+        import native_tools
+        def evaluate():
+            problems = []
+            for name in ('godot', 'codex'):
+                details = native_tools.inspect(self.config, name)
+                if details['status'] not in ('Ready', 'Components verified', 'Missing'):
+                    problems.append(name + ': ' + details['status'])
+                if name == 'codex' and details['path']:
+                    auth = native_tools.codex_authentication(self.config)
+                    if auth['status'] != 'Ready':
+                        problems.append('Codex: ' + auth['status'])
+            return problems
+        def complete(problems, error):
+            if not self.window:
+                return
+            if error:
+                self.settings_button.set_label('SETTINGS · ERROR')
+                self.settings_button.set_name('settings-error')
+                self.settings_button.set_tooltip_text(error)
+            else:
+                self.settings_button.set_label('SETTINGS' + (' · ACTION NEEDED' if problems else ''))
+                self.settings_button.set_name('settings-warning' if problems else 'setting')
+                self.settings_button.set_tooltip_text('\n'.join(problems) if problems else 'Tools and configuration')
+        self.worker(evaluate, complete)
+
+    def build_ai_workspace(self, page, grid):
+        # Keep launch controls separate from the future embedded output area.
+        self.ai_controls = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        page.pack_start(self.ai_controls, False, False, 0)
+        grid(self.ai_controls, [
+            ('New Conversation', lambda _: self.open_embedded(), 'project'),
+            ('Resume Conversation', self.session_browser, 'project')], button_name='setting')
+        prompt_label = self.label('Custom prompt', 'helper')
+        self.ai_controls.pack_start(prompt_label, False, False, 0)
+        self.ai_prompt = Gtk.TextView(wrap_mode=Gtk.WrapMode.WORD_CHAR)
+        self.ai_prompt.set_name('ai-prompt')
+        self.ai_prompt.set_accepts_tab(False)
+        self.ai_prompt.set_left_margin(8)
+        self.ai_prompt.set_right_margin(8)
+        self.ai_prompt.get_accessible().set_name('Custom prompt')
+        prompt_scroll = Gtk.ScrolledWindow()
+        prompt_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        prompt_scroll.set_min_content_height(80)
+        prompt_scroll.set_max_content_height(120)
+        prompt_scroll.add(self.ai_prompt)
+        self.ai_controls.pack_start(prompt_scroll, False, False, 0)
+        self.project_buttons.append(self.ai_prompt)
+        self.ai_run = self.button('Run', self.run_ai_prompt)
+        self.ai_run.set_halign(Gtk.Align.END)
+        self.project_buttons.append(self.ai_run)
+        self.ai_controls.pack_start(self.ai_run, False, False, 0)
+        self.ai_prompt.get_buffer().connect('changed', lambda _: self.update_ai_run())
+        presets = ('Review Changes', 'Fix Godot Errors', 'Validate Project')
+        grid(self.ai_controls, [
+            (name, lambda _, n=name: self.open_embedded(prompt=core.CODEX_TASKS[n]),
+             'project' if name == 'Review Changes' else 'godot') for name in presets], columns=3, button_name='setting')
+        self.ai_advanced = Gtk.Expander(label='More actions')
+        self.ai_advanced.set_name('ai-advanced')
+        advanced = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        self.ai_advanced.add(advanced)
+        grid(advanced, [
+            ('Find Conversations', self.session_browser, 'project'),
+            ('External Codex Terminal', lambda _: self.action('code'), 'project'),
+            ('Explain Project', lambda _: self.action('code', prompt=core.CODEX_TASKS['Explain Project']), 'project'),
+            ('Copy ChatGPT Brief', lambda _: self.copy_brief(), 'project'),
+            ('Open ChatGPT', self.open_chatgpt, None)], button_name='setting')
+        advanced.pack_start(self.label('Resume Conversation includes search, sorting and All Projects. Codex conversations run inside Studio. External Codex Terminal remains available. Review Project Context before attaching it to ChatGPT.', 'helper'), False, False, 0)
+        # Advanced operations live in a compact toolbar menu, not a permanent grid.
+        actions = Gtk.Menu()
+        for caption, handler in (
+            ('Find Conversations', self.session_browser),
+            ('Open Codex Terminal', lambda _: self.action('code')),
+            ('Explain Project', lambda _: self.action('code', prompt=core.CODEX_TASKS['Explain Project'])),
+            ('Copy ChatGPT Brief', lambda _: self.copy_brief()),
+            ('Open ChatGPT', self.open_chatgpt),
+        ):
+            item = Gtk.MenuItem(label=caption)
+            item.connect('activate', handler)
+            actions.append(item)
+        actions.show_all()
+        menu_button = Gtk.Button(label='More ···')
+        menu_button.connect('clicked', lambda button: actions.popup_at_widget(button, Gdk.Gravity.SOUTH_WEST, Gdk.Gravity.NORTH_WEST, None))
+        self.ai_controls.pack_start(menu_button, False, False, 0)
+        self.ai_advanced.hide()
+
+        # A future output widget can be packed here without changing launch controls.
+        self.ai_output_area = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        page.pack_start(self.ai_output_area, True, True, 0)
+
+    def update_ai_run(self):
+        if not hasattr(self, 'ai_run'):
+            return
+        buffer = self.ai_prompt.get_buffer()
+        prompt = buffer.get_text(*buffer.get_bounds(), True)
+        selected = any(p['name'] == self.combo.get_active_id() for p in self.rows)
+        self.ai_run.set_sensitive(selected and not self.busy and bool(prompt.strip())
+                                  and len(prompt) <= 32000 and '\0' not in prompt)
+
+    def run_ai_prompt(self, _=None):
+        buffer = self.ai_prompt.get_buffer()
+        prompt = buffer.get_text(*buffer.get_bounds(), True)
+        if not prompt.strip() or len(prompt) > 32000 or '\0' in prompt:
+            self.status.set_text('Enter a prompt of 1–32,000 characters without NUL characters.')
+            return
+        self.open_embedded(prompt=prompt)
 
     def open_url(self, url):
         config = dict(self.config)
@@ -187,6 +290,9 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
         self.project_task(task, lambda message: self.status.set_text(message), 'Opening Moonlight…')
 
     def do_shutdown(self):
+        view = getattr(self, 'embedded_view', None)
+        if view:
+            view.close()
         core.close_tunnels()
         Gtk.Application.do_shutdown(self)
 
@@ -209,7 +315,7 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
         self.combo.remove_all()
         self.selection_changed(None)
         self.refresh_button.set_sensitive(False)
-        self.status.set_text('Reading Studio Projects API…')
+        self.status.set_text('Reading local workspace…')
         def done(rows, error):
             self.refreshing = False
             self.refresh_button.set_sensitive(True)
@@ -220,7 +326,7 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
                 self.rows = []
                 self.combo.remove_all()
                 self.selection_changed(None)
-                self.status.set_text('Project API unavailable: ' + error)
+                self.status.set_text('Workspace unavailable: ' + error)
                 return
             self.rows = rows
             self.combo.remove_all()
@@ -230,11 +336,7 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
                 self.combo.set_active(0 if rows else -1)
             self.status.set_text(f'{len(rows)} projects loaded.' if rows else 'No projects yet. Create a project to begin.')
         def discover():
-            api_rows = core.projects(config)
-            local_rows = project_client.request(config, 'Studio', 'list_projects')
-            merged = {p['name']: dict(p, type=p.get('type', 'Godot')) for p in api_rows}
-            merged.update({p['name']: p for p in local_rows})
-            return sorted(merged.values(), key=lambda p: p['name'].lower())
+            return project_client.request(config, 'Studio', 'list_projects')
         self.worker(discover, done)
 
     def selection_changed(self, _):
@@ -244,12 +346,8 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
             b.set_sensitive(selected and not self.busy)
         p = next((p for p in self.rows if p['name'] == name), {})
         for button in getattr(self, 'godot_buttons', []):
-            button.set_sensitive(selected and p.get('type', 'Godot') == 'Godot' and not self.busy)
-        try:
-            core.ssh_args(self.config, 'edit', 'Studio')
-            connection_ready = True
-        except ValueError:
-            connection_ready = False
+            button.set_sensitive(selected and not self.busy)
+        connection_ready = True
         for button in getattr(self, 'connection_buttons', []):
             button.set_sensitive(connection_ready and not self.busy)
         self.create_button.set_sensitive(connection_ready and not self.busy)
@@ -263,28 +361,33 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
                 remember_project(name)
             except OSError as exc:
                 self.status.set_text('Could not remember selected project: ' + str(exc))
+        Studio.update_ai_run(self)
         p = next((p for p in self.rows if p['name'] == name), {})
-        self.detail.set_text(' · '.join([str(p.get('type', 'Godot')), str(p.get('branch') or 'No branch'), 'Git status unavailable' if p.get('dirty') is None else 'Uncommitted changes' if p.get('dirty') else 'Clean', str(p.get('commit') or 'No commits')]) if p else 'Select a project.')
+        self.detail.set_text(' · '.join(['Studio project', str(p.get('branch') or 'No branch'), 'Git status unavailable' if p.get('dirty') is None else 'Uncommitted changes' if p.get('dirty') else 'Clean', str(p.get('commit') or 'No commits')]) if p else 'Select a project.')
 
-    def action(self, action, name=None, template='Godot', session_id=None, prompt=None, all_sessions=False):
+    def action(self, action, name=None, template='Studio', session_id=None, prompt=None, all_sessions=False):
         if self.busy:
             return
         name = name or self.combo.get_active_id()
-        if action != 'new' and not any(p['name'] == name for p in self.rows):
-            self.status.set_text('Select a project from a successful API refresh first.')
+        if action in ('code', 'resume') and name != self.combo.get_active_id():
+            self.status.set_text('Switch to the owning Project before opening a conversation.')
             return
-        if action == 'edit' and next((p.get('type', 'Godot') for p in self.rows if p['name'] == name), None) != 'Godot':
-            self.status.set_text('Select a Godot project to open Godot.')
+        if action != 'new' and not any(p['name'] == name for p in self.rows):
+            self.status.set_text('Select a project from a successful workspace refresh first.')
+            return
+        if action == 'resume' and session_id is None:
+            self.session_browser()
             return
         try:
-            core.ssh_args(self.config, action, name)
+            project_client.policy.project_name(name)
+            project_client.workspace(self.config)
         except ValueError as exc:
             self.status.set_text(str(exc))
             return
         self.busy = True
         self.create_button.set_sensitive(False)
         self.selection_changed(None)
-        self.status.set_text('Opening Codex terminal…' if action in ('code', 'resume') else 'Connecting Moonlight and waiting for Studio Desktop…' if action == 'edit' else 'Waiting for remote Studio…')
+        self.status.set_text('Opening Codex terminal…' if action in ('code', 'resume') else 'Opening local Godot…' if action == 'edit' else 'Creating local project…')
         config = dict(self.config)
         stream_errors = []
         terminal_released = [False]
@@ -339,7 +442,8 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
                 callbacks['all_sessions'] = True
             if action == 'edit':
                 callbacks['on_progress'] = lambda message: GLib.idle_add(self.status.set_text, message)
-            return core.run_action(config, action, name, **callbacks)
+            from native_tools import run_action
+            return run_action(config, action, name, **callbacks)
         self.worker(task, done)
 
     def create_project(self, _):
@@ -353,50 +457,19 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
         entry.set_activates_default(True)
         dialog.set_default_response(Gtk.ResponseType.OK)
         box.pack_start(entry, False, False, 6)
-        template = Gtk.ComboBoxText()
-        for kind in project_client.policy.PROJECT_TYPES:
-            template.append_text(kind)
-        template.set_active(0)
-        box.pack_start(template, False, False, 6)
         box.pack_start(self.label('Creates a shared project with categorized assets, GAME.md, PROGRESS.md, DECISIONS.md and AGENTS.md. Initializes Git without a commit.', 'helper'), False, False, 6)
         dialog.show_all()
         if dialog.run() == Gtk.ResponseType.OK:
-            name, kind = entry.get_text(), template.get_active_text()
+            name = entry.get_text()
             dialog.destroy()
-            self.action('new', name, template=kind)
+            self.action('new', name)
         else:
             dialog.destroy()
 
     def settings(self, _):
-        dialog = Gtk.Dialog(title='Studio connection', transient_for=self.window, modal=True)
-        dialog.add_buttons('CANCEL', Gtk.ResponseType.CANCEL, 'SAVE', Gtk.ResponseType.OK)
-        box = dialog.get_content_area()
-        box.set_border_width(18)
-        entries = {}
-        for key, title in [('host', 'OptiPlex Tailscale IPv4 address (100.64.0.0/10)'), ('user', 'SSH user'), ('moonlight_appimage', 'Moonlight AppImage path (optional; blank for automatic detection)'), ('moonlight_app', 'Wolf desktop app title (blank = OptiPlex Studio Desktop)')]:
-            box.pack_start(self.label(title, 'helper'), False, False, 5)
-            entries[key] = Gtk.Entry(text=str(self.config.get(key, '')))
-            box.pack_start(entries[key], False, False, 5)
-        box.pack_start(self.label('Uses existing SSH keys and trusted host keys.\nComplete Tailscale and SSH pairing using your existing setup.\nNo passwords or NOW settings are stored here.', 'helper'), False, False, 8)
-        dialog.show_all()
-        while dialog.run() == Gtk.ResponseType.OK:
-            candidate = dict(self.config)
-            candidate.update({k: e.get_text().strip() for k, e in entries.items()})
-            try:
-                core.ssh_args(candidate, 'edit', 'validation')
-                CONFIG.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-                temp = CONFIG.with_suffix('.tmp')
-                fd = os.open(temp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC | os.O_NOFOLLOW, 0o600)
-                with os.fdopen(fd, 'w') as out:
-                    json.dump(candidate, out)
-                temp.replace(CONFIG)
-                self.config = candidate
-                self.status.set_text('Studio connection saved.')
-                self.refresh()
-                break
-            except (ValueError, OSError) as exc:
-                self.status.set_text(str(exc))
-        dialog.destroy()
+        # Tool status, installation and per-tool executable selection live in one window.
+        self.tools_setup()
+        self.refresh_tool_health()
 
     def restore(self):
         self.restoring = True
@@ -426,7 +499,7 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
     def initialize_tray(self):
         self.menu = Gtk.Menu()
         self.tray_project_items = []
-        for text, callback in [('Open OptiPlex Studio', self.restore), ('Open Studio Desktop', lambda: (self.restore(), self.open_studio_desktop())), ('New Codex conversation', lambda: (self.restore(), self.action('code'))), ('Resume conversation', lambda: (self.restore(), self.session_browser())), ('Studio workspace', lambda: self.open_url('https://studio.monumentrisk.com')), ('Settings', lambda: (self.restore(), self.settings(None))), ('Quit', self.quit)]:
+        for text, callback in [('Open OptiPlex Studio', self.restore), ('New Codex conversation', lambda: (self.restore(), self.action('code'))), ('Resume conversation', lambda: (self.restore(), self.session_browser())), ('Settings', lambda: (self.restore(), self.settings(None))), ('Quit', self.quit)]:
             item = Gtk.MenuItem(label=text)
             item.connect('activate', lambda _, cb=callback: cb())
             self.menu.append(item)

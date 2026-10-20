@@ -28,15 +28,15 @@ MAX_FILES = 1500
 CATEGORIES = {'Sprites': 'assets/sprites', 'Textures': 'assets/textures',
               '3D Models': 'assets/3d', 'Music': 'assets/audio/music',
               'Sound Effects': 'assets/audio/sfx', 'Other Assets': 'assets/other'}
-PROJECT_TYPES = ('Blank', 'Godot', 'Music/Audio', 'Animation', '3D')
-DOCS = ('GAME.md', 'PROGRESS.md', 'DECISIONS.md', 'AGENTS.md')
+PROJECT_TYPES = ('Studio',)  # One workspace; applications are capabilities, not project types.
+DOCS = ('GAME.md', 'PROGRESS.md', 'DECISIONS.md', 'AGENTS.md', 'AI_MEMORY.md')
 WORKFLOW = ('Before significant implementation, read GAME.md, PROGRESS.md, DECISIONS.md and AGENTS.md '
             'in the project root. Keep PROGRESS.md and DECISIONS.md concise and accurate after meaningful changes. '
             'Treat GAME.md, PROGRESS.md and DECISIONS.md as the shared handoff for ChatGPT, Codex, Godot, Blender and Krita. '
             'Record agreed design changes before implementation and update progress after implementation. '
             'Work only in this project; never change Wolf, server services or unrelated projects. '
             'Do not commit unless explicitly requested. For Godot projects only, validate Godot changes with the existing '
-            '~/.local/bin/studio-validate PROJECT_NAME when available, replacing PROJECT_NAME with the project name. '
+            'local Godot executable using --headless --path PROJECT_DIRECTORY --editor --quit when available. '
             'Report missing validation tools or permissions; never bypass them through unrestricted Docker access. '
             'Headless validation does not replace playtesting.')
 TEXT_TYPES = {'.gd', '.tscn', '.tres', '.godot', '.gdshader', '.gdshaderinc', '.uid',
@@ -100,15 +100,13 @@ def text_safe(data):
     return '\0' not in text and not SECRET.search(text)
 
 
-def templates(name, kind='Godot'):
+def templates(name, kind='Studio'):
     documents = {'GAME.md': f'# {name}\n\n## Concept and genre\nTo be defined.\n\n## Mechanics\nTo be defined.\n\n## Aesthetic direction\nTo be defined.\n\n## Goals\nTo be defined.\n',
             'PROGRESS.md': '# Progress\n\n## Implemented\n- Godot project scaffold.\n\n## Current work\n- Define the game concept.\n\n## Next steps\n- Build and playtest a small prototype.\n',
             'DECISIONS.md': '# Decisions\n\nRecord meaningful technical and design decisions with their reasons.\n',
             'AGENTS.md': '# Project instructions\n\n' + WORKFLOW.replace('PROJECT_NAME', name) + '\n'}
 
-    if kind != 'Godot':
-        documents['GAME.md'] = f'# {name}\n\n## Project type\n{kind}\n\n## Goals and creative direction\nTo be defined.\n'
-        documents['PROGRESS.md'] = '# Progress\n\n## Implemented\n- Shared project scaffold.\n\n## Current work\n- Define goals.\n\n## Next steps\n- Create an initial draft.\n'
+    documents['AI_MEMORY.md'] = '# Project AI memory\n\nRecord agreed goals, constraints, preferences and useful project facts here.\n'
     return documents
 
 
@@ -134,14 +132,10 @@ class Project:
                 os.close(directory)
 
     def project_type(self):
-        try:
-            self.read('project.godot', MAX_TEXT)
-            return 'Godot'
-        except FileNotFoundError:
-            metadata = json.loads(self.read('studio-project.json', MAX_TEXT))
-            if metadata.get('type') not in PROJECT_TYPES:
-                raise ValueError('Invalid Studio project type.')
-            return metadata['type']
+        metadata = json.loads(self.read('studio-project.json', MAX_TEXT))
+        if metadata.get('type') != 'Studio':
+            raise ValueError('Unsupported Studio project manifest.')
+        return 'Studio'
 
     def close(self):
         os.close(self.fd)
@@ -366,7 +360,7 @@ class Project:
         return {'version': VERSION, 'metadata': self.metadata(), 'inventory': inventory, 'files': files, 'deleted': deleted_files, 'diff': changes}
 
 
-def create_project(base, name, kind='Godot'):
+def create_project(base, name, kind='Studio'):
     project_name(name)
     if kind not in PROJECT_TYPES:
         raise ValueError('Unsupported project template.')
@@ -383,21 +377,15 @@ def create_project(base, name, kind='Godot'):
     project = Project.__new__(Project)
     project.fd, project.name, project.kind = child, name, kind
     try:
-        folders = {'Blank': ('docs',), 'Godot': ('docs', 'scenes', 'scripts'),
-                   'Music/Audio': ('docs', 'sessions', 'mixes'),
-                   'Animation': ('docs', 'storyboards', 'sequences'),
-                   '3D': ('docs', 'models', 'renders')}
-        for folder in folders[kind] + tuple(CATEGORIES.values()):
+        folders = ('docs', 'scenes', 'scripts', 'music', 'art', 'models')
+        for folder in folders + tuple(CATEGORIES.values()):
             with project.parent(folder + '/placeholder', create=True):
                 pass
         files = templates(name, kind)
         files.update({'project.godot': f'config_version=5\n\n[application]\nconfig/name="{name}"\nrun/main_scene="res://scenes/main.tscn"\n\n[rendering]\nrenderer/rendering_method="gl_compatibility"\n',
                       'scenes/main.tscn': '[gd_scene format=3]\n\n[node name="Main" type="Node2D"]\n',
                       '.gitignore': '.godot/\n.studio*\n*.tmp\n'})
-        if kind != 'Godot':
-            files.pop('project.godot')
-            files.pop('scenes/main.tscn')
-        files['studio-project.json'] = json.dumps({'version': 1, 'type': kind}) + '\n'
+        files['studio-project.json'] = json.dumps({'version': 2, 'type': 'Studio', 'engine': 'godot'}) + '\n'
         for filename_, content in files.items():
             project.write(filename_, content.encode(), None, MAX_TEXT)
         _, okay = project.git(['init', '-b', 'main'])
@@ -441,7 +429,7 @@ def handle(request, base=None):
     if operation == 'sessions':
         return list_codex_sessions(base, name, request)
     if operation == 'create':
-        return create_project(base, name, request.get('template', 'Godot'))
+        return create_project(base, name, request.get('template', 'Studio'))
     project = Project(base, name)
     try:
         if operation == 'inspect_assets':

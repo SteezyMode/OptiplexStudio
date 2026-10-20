@@ -8,7 +8,7 @@ import project_client
 
 def session_rows(rows, query='', sort='Recent'):
     query = query.casefold().strip()
-    visible = [row for row in rows if query in ' '.join(str(row.get(k) or '') for k in ('title', 'cwd', 'project', 'id')).casefold()]
+    visible = [row for row in rows if query in ' '.join(str(row.get(k) or '') for k in ('title', 'project')).casefold()]
     if sort == 'Name':
         return sorted(visible, key=lambda row: (row['title'].casefold(), row['id']))
     key = 'createdAt' if sort == 'Oldest' else 'updatedAt'
@@ -16,14 +16,30 @@ def session_rows(rows, query='', sort='Recent'):
 
 
 class SessionUI:
+    def open_embedded(self, identifier=None, prompt=None):
+        context = self.selected_context()
+        if not context or self.busy:
+            return
+        old = getattr(self, 'embedded_view', None)
+        if old and old.alive:
+            self.window.present()
+            self.status.set_text('Close the open conversation before opening another Project thread.')
+            return
+        from embedded_ui import EmbeddedView
+        config, project = context
+        self.embedded_view = EmbeddedView(self, config, project, identifier)
+        if prompt:
+            self.embedded_view.initial_prompt = prompt
+            self.embedded_view.prompt.set_text(prompt)
+
     def session_browser(self, _=None):
         context = self.selected_context()
         if not context or self.busy:
             return
         config, project = context
-        dialog = Gtk.Dialog(title='Codex sessions — ' + project, transient_for=self.window, modal=True)
+        dialog = Gtk.Dialog(title='Conversations — ' + project, transient_for=self.window, modal=True)
         dialog.set_default_size(650, 420)
-        dialog.add_buttons('Close', Gtk.ResponseType.CLOSE, 'Codex Picker', 7, 'Resume Selected Session', Gtk.ResponseType.OK)
+        dialog.add_buttons('Close', Gtk.ResponseType.CLOSE, 'Resume Conversation', Gtk.ResponseType.OK)
         resume = dialog.get_widget_for_response(Gtk.ResponseType.OK)
         resume.set_sensitive(False)
         box = dialog.get_content_area()
@@ -32,7 +48,7 @@ class SessionUI:
         box.pack_start(self.label('Active project: ' + project, 'section'), False, False, 0)
         controls = Gtk.Box(spacing=8)
         scope = Gtk.CheckButton(label='All Projects')
-        search = Gtk.SearchEntry(placeholder_text='Search title, project, path or ID')
+        search = Gtk.SearchEntry(placeholder_text='Search conversations or Projects')
         order = Gtk.ComboBoxText()
         for name in ('Recent', 'Oldest', 'Name'):
             order.append_text(name)
@@ -43,7 +59,7 @@ class SessionUI:
         box.pack_start(controls, False, False, 0)
         model = Gtk.ListStore(str, str, str, str)
         tree = Gtk.TreeView(model=model)
-        for index, title in enumerate(('Conversation', 'Project / working directory', 'Last active')):
+        for index, title in enumerate(('Conversation', 'Project', 'Last active')):
             renderer = Gtk.CellRendererText(ellipsize=3, width_chars=22)
             column = Gtk.TreeViewColumn(title, renderer, text=index)
             column.set_resizable(True)
@@ -57,7 +73,7 @@ class SessionUI:
         box.pack_start(status, False, False, 0)
         more = self.button('Load More', lambda _: load(False))
         box.pack_start(more, False, False, 0)
-        state = {'rows': [], 'cursor': None, 'loading': False, 'alive': True, 'generation': 0}
+        state = {'rows': [], 'cursor': None, 'loading': False, 'alive': True}
         def selected():
             rows, iterator = tree.get_selection().get_selected()
             if iterator is None:
@@ -68,7 +84,7 @@ class SessionUI:
             available = row and any(p['name'] == row.get('project') for p in self.rows)
             resume.set_sensitive(bool(available) and not state['loading'])
             if row and not available:
-                status.set_text('This session is outside a recognized Studio project. Resume it with Codex’s All Projects picker.')
+                status.set_text('This conversation is unassigned. Studio cannot verify its Project.')
         def render(*_):
             model.clear()
             for row in session_rows(state['rows'], search.get_text(), order.get_active_text()):
@@ -76,7 +92,7 @@ class SessionUI:
                     stamp = datetime.fromtimestamp(row['updatedAt']).strftime('%Y-%m-%d %H:%M') if row.get('updatedAt') else 'Unknown'
                 except (TypeError, ValueError, OverflowError, OSError):
                     stamp = 'Unknown'
-                model.append([row['title'], row.get('project') or row['cwd'] or 'Unknown', stamp, row['id']])
+                model.append([row['title'], row.get('project') or 'Unassigned', stamp, row['id']])
             changed()
         def load(reset=True):
             if state['loading']:
@@ -87,14 +103,14 @@ class SessionUI:
             state['loading'] = True
             for widget in (scope, more, resume):
                 widget.set_sensitive(False)
-            status.set_text('Reading Codex sessions over Tailscale SSH…')
+            status.set_text('Reading Codex sessions locally…')
             def done(page, error):
                 if not state['alive']:
                     return
                 state['loading'] = False
                 scope.set_sensitive(True)
                 if error:
-                    status.set_text('Session list unavailable: ' + error + ' Use the Codex Conversation Picker in AI Workspace.')
+                    status.set_text('Conversation list unavailable: ' + error + ' Check your native Codex installation and retry.')
                     more.set_label('Retry')
                     more.set_sensitive(True)
                     return
@@ -104,7 +120,7 @@ class SessionUI:
                 state['cursor'] = page.get('nextCursor')
                 more.set_label('Load More')
                 more.set_sensitive(bool(state['cursor']))
-                status.set_text(f'{len(state["rows"])} sessions loaded. Search and sort apply to loaded pages.' + (' More pages available.' if state['cursor'] else ''))
+                status.set_text(f'{len(state["rows"])} conversations loaded. Search and sort apply to loaded pages.' + (' More pages available.' if state['cursor'] else ''))
                 render()
             all_projects, cursor = scope.get_active(), state['cursor']
             self.worker(lambda: project_client.request(config, project, 'sessions', all_projects=all_projects, cursor=cursor), done)
@@ -117,12 +133,8 @@ class SessionUI:
         load()
         result = dialog.run()
         row = selected() if result == Gtk.ResponseType.OK else None
-        all_projects = scope.get_active()
         state['alive'] = False
         dialog.destroy()
-        if result == 7:
-            self.action('resume', project, all_sessions=all_projects)
-            return
         if row and any(p['name'] == row.get('project') for p in self.rows):
             self.combo.set_active_id(row['project'])
-            self.action('resume', row['project'], session_id=row['id'])
+            self.open_embedded(identifier=row['id'])

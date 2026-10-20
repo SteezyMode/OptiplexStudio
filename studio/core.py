@@ -141,7 +141,7 @@ class TailscaleHTTPSConnection(http.client.HTTPSConnection):
             raise
 
 
-def projects(config):
+def remote_projects(config):
     connection = TailscaleHTTPSConnection(tailscale_ip(config))
     try:
         connection.request('GET', '/api/projects', headers={'Accept': 'application/json'})
@@ -238,12 +238,12 @@ def ssh_args(config, action, name, interactive=False):
             '-o', 'BatchMode=yes', f'{user}@{host}', remote_command(action, name, user)]
 
 def terminal_args(command):
-    # Only use adapters with documented argv execution and foreground modes.
+    # Use each terminal's command parsing contract. XFCE may hand off to a server.
     # In particular, cosmic-term's help does not promise -e support.
     adapters = {
         'gnome-terminal': ['--wait', '--'],
         'konsole': ['--nofork', '-e'],
-        'xfce4-terminal': ['--disable-server', '-x'],
+        'xfce4-terminal': ['--window'],
         'xterm': ['-e'],
     }
     candidates = []
@@ -255,6 +255,9 @@ def terminal_args(command):
     candidates.extend((name, name) for name in adapters if shutil.which(name))
     if candidates:
         executable, adapter = candidates[0]
+        if adapter == 'xfce4-terminal':
+            # XFCE parses this with GLib shell argv parsing, without a shell.
+            return [executable, '--window', '--command=' + shlex.join(command)]
         return [executable] + adapters[adapter] + command
     raise RuntimeError('Install a supported terminal: xterm, GNOME Terminal, Konsole or XFCE Terminal.')
 
@@ -433,7 +436,7 @@ def wait_for_studio_desktop(config, project, on_progress=None, stream_errors=Non
                        'Check Moonlight pairing/connection and the desktop session. Godot was not launched. ' + reason)
 
 
-def run_action(config, action, name, on_started=None, on_error=None, on_progress=None, session_id=None, prompt=None, all_sessions=False):
+def remote_run_action(config, action, name, on_started=None, on_error=None, on_progress=None, session_id=None, prompt=None, all_sessions=False):
     cmd = ssh_args(config, action, name, action in ('code', 'resume'))
     if action in ('code', 'resume'):
         if session_id is not None:
@@ -500,3 +503,18 @@ CODEX_TASKS = {
     'Explain Project': 'Read AGENTS.md and the project documents. Explain this project, its structure, current state, and useful next steps. Do not change files or commit.',
     'Fix Godot Errors': 'Read AGENTS.md and the project documents. Inspect this Godot project, run existing permitted Godot validation when available, and fix confirmed errors. Report unavailable tools or permissions; never bypass permissions or change Wolf. Update concise progress and decisions. Do not commit.',
     'Validate Project': 'Read AGENTS.md and the project documents. Run existing permitted Godot project validation when available and report results. Report missing permissions or tools without bypassing them. Do not change files or commit.'}
+
+
+def projects(config):
+    """Discover the configured local workspace; no server connection."""
+    import project_client
+    return project_client.request(config, 'Studio', 'list_projects')
+
+
+def run_action(config, action, name, **callbacks):
+    """Launch local project tools. Remote helpers are legacy, explicit APIs."""
+    import native_tools
+    if action == 'new':
+        import project_client
+        return project_client.request(config, name, 'create')
+    return native_tools.run_action(config, action, name, **callbacks)

@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import shutil
 import sys
 import tempfile
 import unittest
@@ -44,6 +45,9 @@ class Projects(unittest.TestCase):
             self.assertTrue((self.root / name).is_file())
         self.assertIn('Do not commit', (self.root / 'AGENTS.md').read_text())
         self.assertIn('Docker', (self.root / 'AGENTS.md').read_text())
+        if not shutil.which('git'):
+            self.assertIn('Git initialization failed', helper.create_project(self.base, 'no_git')['warning'])
+            return
         self.assertTrue((self.root / '.git').is_dir())
         self.assertEqual(self.git('status', '--porcelain')[:2], '??')
         with self.assertRaises(FileExistsError):
@@ -121,6 +125,7 @@ class Projects(unittest.TestCase):
         self.assertIsNone(items['assets/audio/music/theme.ogg']['sha256'])
         self.assertTrue(items['scripts/player.gd']['sha256'])
 
+    @unittest.skipUnless(shutil.which('git'), 'Git is not installed')
     def test_snapshot_has_working_tree_staged_untracked_and_git_diff(self):
         script = self.root / 'scripts/player.gd'
         script.write_text('extends Node\nvar speed = 1\n')
@@ -142,6 +147,7 @@ class Projects(unittest.TestCase):
         self.assertIn('-var speed = 1', snapshot['diff'])
         self.assertIn('+var speed = 3', snapshot['diff'])
 
+    @unittest.skipUnless(shutil.which('git'), 'Git is not installed')
     def test_sensitive_deleted_lines_not_leaked_in_diff(self):
         path = self.root / 'scripts/legacy.gd'
         path.write_text('extends Node\n# api_key = "very-private-key-value"\n')
@@ -213,24 +219,18 @@ class Projects(unittest.TestCase):
                 client.export_snapshot(CONFIG, 'game', manifest, ['GAME.md'], destination)
         self.assertFalse(destination.exists())
 
-    def test_protocol_over_actual_local_process_and_sftp_uri(self):
-        # Replace SSH with a local shell ONLY in this test; source and JSON use
-        # the real stdio framing. HOME confines the helper to a disposable tree.
-        home = Path(self.temp.name) / 'home'
-        base = home / 'StudioProjects/Godot'
-        base.mkdir(parents=True)
-        helper.create_project(base, 'game')
-        with patch('core.ssh_args', return_value=['/bin/sh', '-c', 'replaced']), patch.dict(os.environ, HOME=str(home)):
-            result = client.request(CONFIG, 'game', 'docs')
-            self.assertIn('GAME.md', result)
-        self.assertEqual(client.asset_uri(CONFIG, 'game'), 'sftp://optiplex@100.100.100.101/home/optiplex/StudioProjects/Godot/game/assets')
+    def test_local_protocol_and_file_uri(self):
+        config = dict(CONFIG, projects_dir=str(self.base))
+        result = client.request(config, 'game', 'docs')
+        self.assertIn('GAME.md', result)
+        self.assertEqual(client.asset_uri(config, 'game'), (self.root / 'assets').as_uri())
         with self.assertRaises(ValueError):
-            client.asset_uri(CONFIG, '../other')
+            client.asset_uri(config, '../other')
 
     def test_transport_failure_is_actionable(self):
         with patch('core.ssh_args', return_value=['/bin/sh', '-c', 'unused']), patch('pathlib.Path.read_text', return_value='raise RuntimeError("fixture transport failure")'):
             with self.assertRaisesRegex(RuntimeError, 'connection failed'):
-                client.request(CONFIG, 'game', 'docs')
+                client.remote_request(CONFIG, 'game', 'docs')
 
     def test_desktop_process_matching_avoids_wrong_project_and_wrappers(self):
         listing = 'PID COMMAND\n101 /app/bin/godot --editor --path /projects/Godot/game\n'
@@ -421,6 +421,7 @@ class SnapshotDeletions(unittest.TestCase):
     git = Projects.git
     transport = Projects.transport
 
+    @unittest.skipUnless(shutil.which('git'), 'Git is not installed')
     def test_reviewed_deleted_file_is_in_diff_but_not_attached(self):
         path = self.root / 'scripts/removed.gd'
         path.write_text('extends Node\n# old game logic\n')
@@ -459,7 +460,7 @@ class CodexConcurrency(unittest.TestCase):
             fake.create_button.set_sensitive(False)
             fake.status.set_text('Import in progress')
             return 'Codex conversation closed.'
-        with patch('app.project_client.request', return_value={}), patch('app.core.run_action', side_effect=conversation), patch('app.GLib.idle_add', side_effect=lambda function, *args: function(*args)):
+        with patch('app.project_client.request', return_value={}), patch('native_tools.run_action', side_effect=conversation), patch('app.GLib.idle_add', side_effect=lambda function, *args: function(*args)):
             app.Studio.action(fake, 'code', 'game')
         self.assertTrue(fake.busy)
         self.assertFalse(fake.create_button.sensitive)

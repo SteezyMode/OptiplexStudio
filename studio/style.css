@@ -20,3 +20,10 @@ notebook > header tabs tab:checked label {color:#ece8e0;}
 button:disabled {opacity:0.45;}
 
 progressbar text {color:#b8b4ac;}
+
+/* Compact AI composer, using the existing Studio palette. */
+#ai-prompt {border:1px solid #69716a;border-radius:2px;padding:6px 0;}
+#ai-advanced > title {color:#b8b4ac;padding:5px 0;}
+
+#settings-warning {color:#f1d18b; border:1px solid #9b8354; background:#29241b;}
+#settings-error {color:#f1b2ac; border:1px solid #a45454; background:#322021;}
