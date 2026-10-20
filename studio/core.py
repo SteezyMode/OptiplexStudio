@@ -245,6 +245,7 @@ def terminal_args(command):
         'konsole': ['--nofork', '-e'],
         'xfce4-terminal': ['--disable-server', '-x'],
         'xterm': ['-e'],
+        'cosmic-term': ['--'],
     }
     candidates = []
     alternative = shutil.which('x-terminal-emulator')
