@@ -12,9 +12,8 @@ import zipfile
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'studio'))
 import project_helper as helper
 import project_client as client
-import desktop_helper
 
-CONFIG = {'host': '100.100.100.101', 'user': 'optiplex'}
+CONFIG = {}
 
 class Projects(unittest.TestCase):
     def setUp(self):
@@ -44,7 +43,9 @@ class Projects(unittest.TestCase):
         for name in helper.DOCS:
             self.assertTrue((self.root / name).is_file())
         self.assertIn('Do not commit', (self.root / 'AGENTS.md').read_text())
-        self.assertIn('Docker', (self.root / 'AGENTS.md').read_text())
+        guidance = (self.root / 'AGENTS.md').read_text()
+        self.assertIn('do not request broader system access', guidance)
+        self.assertNotIn('Docker', guidance)
         if not shutil.which('git'):
             self.assertIn('Git initialization failed', helper.create_project(self.base, 'no_git')['warning'])
             return
@@ -227,62 +228,10 @@ class Projects(unittest.TestCase):
         with self.assertRaises(ValueError):
             client.asset_uri(config, '../other')
 
-    def test_transport_failure_is_actionable(self):
-        with patch('core.ssh_args', return_value=['/bin/sh', '-c', 'unused']), patch('pathlib.Path.read_text', return_value='raise RuntimeError("fixture transport failure")'):
-            with self.assertRaisesRegex(RuntimeError, 'connection failed'):
-                client.remote_request(CONFIG, 'game', 'docs')
-
-    def test_desktop_process_matching_avoids_wrong_project_and_wrappers(self):
-        listing = 'PID COMMAND\n101 /app/bin/godot --editor --path /projects/Godot/game\n'
-        self.assertTrue(desktop_helper.matching_process(listing, 'godot', 'game'))
-        self.assertFalse(desktop_helper.matching_process(listing, 'godot', 'other'))
-        self.assertFalse(desktop_helper.matching_process('PID COMMAND\n102 /bin/sh -c "godot --editor --path /projects/Godot/game"', 'godot', 'game'))
-        self.assertTrue(desktop_helper.matching_process('PID COMMAND\n103 /app/bin/krita', 'krita', 'game'))
-
-    def test_desktop_helper_reuses_godot_and_has_no_container_lifecycle(self):
-        home = Path(self.temp.name) / 'home'
-        base = home / 'StudioProjects/Godot'
-        base.mkdir(parents=True)
-        helper.create_project(base, 'game')
-        calls = []
-        def fake_run(args, **kwargs):
-            calls.append(args)
-            if args[1] == 'ps': return 'WolfStudioDesktop_123\n'
-            if args[1] == 'top': return 'PID COMMAND\n101 /app/bin/godot --editor --path /projects/Godot/game\n'
-            raise AssertionError('Unexpected mutation or duplicate launch')
-        with patch('desktop_helper.Path.home', return_value=home), patch('desktop_helper.desktop_environment', return_value={'DISPLAY': ':0', 'XDG_RUNTIME_DIR': '/run/user/wolf', 'WAYLAND_DISPLAY': 'wayland-1'}), patch('desktop_helper.run', side_effect=fake_run), patch('desktop_helper.focus_godot', return_value=True) as focus:
-            result = desktop_helper.handle({'version': 1, 'operation': 'desktop', 'project': 'game', 'application': 'godot'})
-            focus.assert_called_once_with('WolfStudioDesktop_123', 'game')
-        self.assertTrue(result['reused'])
-        self.assertTrue(all(args[1] in ('ps', 'top') for args in calls))
-        with self.assertRaises(ValueError):
-            desktop_helper.handle({'version': 1, 'operation': 'desktop', 'project': 'game', 'application': 'arbitrary-shell'})
-
-    def test_krita_blender_commands_are_fixed_and_project_scoped(self):
-        home = Path(self.temp.name) / 'home'
-        base = home / 'StudioProjects/Godot'
-        base.mkdir(parents=True)
-        helper.create_project(base, 'game')
-        for app, identifier in [('krita', 'org.kde.krita'), ('blender', 'org.blender.Blender')]:
-            calls = []
-            def fake_run(args, **kwargs):
-                calls.append(args)
-                if args[1] == 'ps': return 'WolfStudioDesktop_123\n'
-                if args[1] == 'top':
-                    return ('PID COMMAND\n104 /app/bin/' + app + '\n') if any('exec' in call and '-d' in call for call in calls) else 'PID COMMAND\n'
-                return ''
-            with patch('desktop_helper.Path.home', return_value=home), patch('desktop_helper.desktop_environment', return_value={'DISPLAY': ':0', 'XDG_RUNTIME_DIR': '/run/user/wolf', 'WAYLAND_DISPLAY': 'wayland-1'}), patch('desktop_helper.run', side_effect=fake_run), patch('desktop_helper.time.sleep'):
-                result = desktop_helper.handle({'version': 1, 'operation': 'desktop', 'project': 'game', 'application': app})
-            self.assertFalse(result['reused'])
-            launch = next(call for call in calls if 'exec' in call and '-d' in call)
-            self.assertEqual(launch[-3:], ['flatpak', 'run', identifier])
-            self.assertIn('/projects/Godot/game', launch)
-            self.assertNotIn('start', launch)
-
 class GUIActions(unittest.TestCase):
     def fake(self):
         from project_ui import ProjectUI
-        from test_network import Widget
+        from ui_fakes import Widget
         class Fake(ProjectUI):
             config = dict(CONFIG)
             busy = False
@@ -323,9 +272,9 @@ class GUIActions(unittest.TestCase):
 
     def test_project_errors_are_visible_and_controls_restored(self):
         fake = self.fake()
-        with patch('project_ui.client.request', side_effect=RuntimeError('SSH trust failure')), patch('project_ui.GLib.idle_add'):
+        with patch('project_ui.client.request', side_effect=RuntimeError('Local workspace failure')), patch('project_ui.GLib.idle_add'):
             fake.share_context()
-        self.assertIn('SSH trust failure', fake.status.text)
+        self.assertIn('Local workspace failure', fake.status.text)
         self.assertEqual(fake.last_notice[0], 'Project operation failed')
         self.assertFalse(fake.busy)
 
@@ -337,49 +286,6 @@ class GUIActions(unittest.TestCase):
             self.assertFalse((Path(folder) / 'optiplex-studio/config.json').exists())
             with self.assertRaises(ValueError):
                 project_ui.remember_project('../other')
-
-class CreativeRouting(unittest.TestCase):
-    def test_fixed_tunnel_destinations_and_tailnet_ssh_safety(self):
-        import core
-        self.assertEqual(dict(core.APPS)['Blockbench'], 'https://models.monumentrisk.com')
-        self.assertEqual(dict(core.APPS)['CozyClay'], 'https://previs.monumentrisk.com/app/')
-        for url, (remote, local, path) in core.TUNNEL_APPS.items():
-            args = core.tunnel_args(CONFIG, url)
-            self.assertIn(f'127.0.0.1:{local}:127.0.0.1:{remote}', args)
-            self.assertEqual(args[-1], 'optiplex@100.100.100.101')
-            self.assertIn('-N', args)
-            self.assertIn('ExitOnForwardFailure=yes', args)
-            self.assertIn('StrictHostKeyChecking=yes', args)
-        with self.assertRaises(ValueError):
-            core.tunnel_args(CONFIG, 'http://arbitrary.remote')
-
-    def test_broken_public_hosts_use_tunnel_before_browser(self):
-        import core
-        for url, (_, local, path) in core.TUNNEL_APPS.items():
-            target = f'http://127.0.0.1:{local}{path}'
-            with patch('core.ensure_tunnel', return_value=target) as tunnel, patch('core.browser_args', return_value=['/bin/true']) as browser:
-                core.open_application(CONFIG, url)
-                tunnel.assert_called_once_with(CONFIG, url)
-                browser.assert_called_once_with(CONFIG, target, forwarded=True)
-        with patch('core.ensure_tunnel', side_effect=RuntimeError('SSH forwarding is not authorized')), patch('core.browser_args') as browser:
-            with self.assertRaisesRegex(RuntimeError, 'not authorized'):
-                core.open_application(CONFIG, 'https://models.monumentrisk.com')
-            browser.assert_not_called()
-
-    def test_forwarded_browser_only_accepts_fixed_loopback_routes(self):
-        import core
-        with patch('shutil.which', return_value='/usr/bin/chromium'):
-            for url in ('http://example.com', 'http://192.168.1.1:80/', 'http://127.0.0.1:9999/'):
-                with self.assertRaises(ValueError):
-                    core.browser_args(CONFIG, url, forwarded=True)
-            args = core.browser_args(CONFIG, 'http://127.0.0.1:28770/', forwarded=True)
-            self.assertFalse(any('ignore-certificate' in arg for arg in args))
-
-    def test_default_stream_uses_verified_desktop_and_keeps_host_configurable(self):
-        import core
-        with patch('core.moonlight_prefix', return_value=['moonlight']):
-            self.assertEqual(core.moonlight_args(CONFIG), ['moonlight', 'stream', CONFIG['host'], 'OptiPlex Studio Desktop'])
-            self.assertEqual(core.moonlight_args(dict(CONFIG, moonlight_app='Studio Desktop'))[-1], 'OptiPlex Studio Desktop')
 
 class MoreGUIActions(unittest.TestCase):
     def test_native_import_picker_conflict_requires_gui_confirmation(self):
@@ -439,18 +345,11 @@ class SnapshotDeletions(unittest.TestCase):
             self.assertIn(b'deleted file', archive.read('CHANGES.diff'))
             self.assertIn(b'old game logic', archive.read('CHANGES.diff'))
 
-class TunnelFailures(unittest.TestCase):
-    def test_real_forward_process_error_is_reported_before_browser(self):
-        import core
-        with patch.dict(core._tunnels, {}, clear=True), patch('core.tunnel_args', return_value=['/bin/sh', '-c', 'echo "Host key verification failed" >&2; exit 255']):
-            with self.assertRaisesRegex(RuntimeError, 'Host key verification failed'):
-                core.ensure_tunnel(CONFIG, 'https://models.monumentrisk.com')
-
 class CodexConcurrency(unittest.TestCase):
     def test_terminal_exit_does_not_clear_another_project_operation(self):
         import app
         fake = GUIActions().fake()
-        from test_network import Widget
+        from ui_fakes import Widget
         fake.codex_status = Widget()
         def conversation(config, action, name, **callbacks):
             callbacks['on_started']()

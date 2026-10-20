@@ -14,7 +14,7 @@ import project_client
 from session_helper import list_codex_sessions
 from session_ui import session_rows
 
-CONFIG = {'host': '100.100.100.101', 'user': 'artist'}
+CONFIG = {}
 A = '12345678-1234-1234-1234-123456789012'
 B = '12345678-1234-1234-1234-123456789013'
 C = '12345678-1234-1234-1234-123456789014'
@@ -103,39 +103,6 @@ for line in sys.stdin:
                 with self.assertRaisesRegex(RuntimeError, 'Unsupported method'):
                     list_codex_sessions(home, 'one', {'_config': {'codex_path': str(cli)}})
 
-    def test_resume_uuid_and_prompt_command_construction(self):
-        def terminal(command):
-            captured.extend(command)
-            Path(command[4]).write_text('0')
-            return ['terminal']
-        for kwargs, expected in [({'session_id':A}, ['resume',A]), ({'all_sessions':True},['resume','--all'])]:
-            captured=[]
-            process=MagicMock()
-            process.__enter__.return_value.communicate.return_value=('', '')
-            with patch('core.terminal_args', side_effect=terminal), patch('core.subprocess.Popen', return_value=process):
-                core.remote_run_action(CONFIG,'resume','one',**kwargs)
-            remote=shlex.split(captured[-1])
-            self.assertEqual(remote[-2:],expected)
-            self.assertEqual(remote[2],'/home/artist/StudioProjects/Godot/one')
-        with patch('core.subprocess.Popen') as spawn:
-            with self.assertRaises(ValueError): core.remote_run_action(CONFIG,'resume','one',session_id='bad;command')
-            with self.assertRaises(ValueError): core.remote_run_action(CONFIG,'code','one',prompt='arbitrary')
-            spawn.assert_not_called()
-        captured=[]
-        with patch('core.terminal_args', side_effect=terminal), patch('core.subprocess.Popen', return_value=process):
-            core.remote_run_action(CONFIG,'code','one',prompt=core.CODEX_TASKS['Explain Project'])
-        self.assertEqual(shlex.split(captured[-1])[-1], core.CODEX_TASKS['Explain Project'])
-
-    def test_helper_source_contains_supported_session_listing(self):
-        original = Path.read_text
-        def read(path, *args, **kwargs):
-            if path.name == 'project_helper.py':
-                return "import json,sys\njson.load(sys.stdin)\nprint(json.dumps({'ok': True, 'result': {'available': callable(list_codex_sessions)}}))"
-            return original(path, *args, **kwargs)
-        with patch('core.ssh_args', return_value=['/bin/sh','-c','replaced']), patch('project_client.Path.read_text', new=read):
-            result = project_client.remote_request(CONFIG,'one','sessions')
-        self.assertTrue(result['available'])
-
 class Routing(unittest.TestCase):
     def test_contextual_action_and_real_session_id_keep_project_working_directory(self):
         from test_projects import GUIActions
@@ -153,11 +120,11 @@ class Routing(unittest.TestCase):
 
     def test_godot_disabled_for_other_media_and_no_project_actions(self):
         from test_projects import GUIActions
-        from test_network import Widget
+        from ui_fakes import Widget
         import app
         fake = GUIActions().fake()
         fake.rows = [{'name':'game','type':'Studio'}]
-        fake.project_buttons, fake.godot_buttons, fake.connection_buttons = [Widget()], [Widget()], [Widget()]
+        fake.project_buttons, fake.godot_buttons = [Widget()], [Widget()]
         fake.detail, fake.active_label = Widget(), Widget()
         app.Studio.selection_changed(fake,None)
         self.assertTrue(fake.project_buttons[0].sensitive)
@@ -169,10 +136,8 @@ class Routing(unittest.TestCase):
         app.Studio.selection_changed(fake,None)
         self.assertFalse(fake.project_buttons[0].sensitive)
         self.assertFalse(fake.godot_buttons[0].sensitive)
-        self.assertTrue(fake.connection_buttons[0].sensitive)
         fake.config = {'host': '', 'user': 'artist'}
         app.Studio.selection_changed(fake, None)
-        self.assertTrue(fake.connection_buttons[0].sensitive)
         self.assertTrue(fake.create_button.sensitive)
 
     def test_independent_creative_tool_launches_locally(self):
@@ -230,18 +195,17 @@ class AIComposer(unittest.TestCase):
         fake.button = MagicMock()
         fake.session_browser = MagicMock()
         fake.copy_brief = MagicMock()
-        fake.open_chatgpt = MagicMock()
         fake.run_ai_prompt = MagicMock()
         fake.update_ai_run = MagicMock()
         grid = MagicMock()
         # Build without a display; live widget checks are in gui_workflows.py.
-        with patch('app.Gtk.Box'), patch('app.Gtk.TextView'), patch('app.Gtk.ScrolledWindow'), patch('app.Gtk.Expander'):
+        with patch('app.Gtk.Box'), patch('app.Gtk.TextView'), patch('app.Gtk.ScrolledWindow'), patch('app.Gtk.Expander'), patch('app.Gtk.Menu'), patch('app.Gtk.MenuItem'), patch('app.Gtk.Button'):
             app.Studio.build_ai_workspace(fake, MagicMock(), grid)
         groups = [call.args[1] for call in grid.call_args_list]
         self.assertEqual([entry[0] for entry in groups[0]], ['New Conversation', 'Resume Conversation'])
         self.assertEqual([entry[0] for entry in groups[1]], ['Review Changes', 'Fix Godot Errors', 'Validate Project'])
         self.assertEqual([entry[2] for entry in groups[1]], ['project', 'godot', 'godot'])
-        self.assertEqual([entry[0] for entry in groups[2]], ['Find Conversations', 'External Codex Terminal', 'Explain Project', 'Copy ChatGPT Brief', 'Open ChatGPT'])
+        self.assertEqual([entry[0] for entry in groups[2]], ['Find Conversations', 'External Codex Terminal', 'Explain Project', 'Copy ChatGPT Brief'])
         for name, callback, _ in groups[1]:
             callback(None)
             fake.open_embedded.assert_called_with(prompt=core.CODEX_TASKS[name])
