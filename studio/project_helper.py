@@ -1,9 +1,5 @@
 #!/usr/bin/python3
-"""Narrow project protocol over SSH stdio. No daemon, Docker or arbitrary commands.
-
-The client sends this bundled module to python3 -c; no remote installation.
-All filesystem access is anchored to directory FDs opened with O_NOFOLLOW.
-"""
+"""Local project operations with filesystem access anchored to directory FDs."""
 import base64
 import contextlib
 import fcntl
@@ -37,7 +33,7 @@ WORKFLOW = ('Before significant implementation, read GAME.md, PROGRESS.md, DECIS
             'Work only in this project; never change Wolf, server services or unrelated projects. '
             'Do not commit unless explicitly requested. For Godot projects only, validate Godot changes with the existing '
             'local Godot executable using --headless --path PROJECT_DIRECTORY --editor --quit when available. '
-            'Report missing validation tools or permissions; never bypass them through unrestricted Docker access. '
+            'Report missing validation tools or permissions; do not request broader system access to bypass them. '
             'Headless validation does not replace playtesting.')
 TEXT_TYPES = {'.gd', '.tscn', '.tres', '.godot', '.gdshader', '.gdshaderinc', '.uid',
               '.json', '.csv', '.txt', '.gltf', '.obj', '.mtl', '.md'}
@@ -463,10 +459,6 @@ def handle(request, base=None):
             return {'metadata': project.metadata(), 'inventory': project.inventory()}
         if operation == 'snapshot':
             return project.snapshot(request['selections'])
-        if operation in ('browse', 'browse_project'):
-            with project.parent('assets/placeholder', create=True):
-                pass
-            return {'path': str(base / name / 'assets') if operation == 'browse' else str(base / name)}
         raise ValueError('Unsupported project operation.')
     finally:
         project.close()

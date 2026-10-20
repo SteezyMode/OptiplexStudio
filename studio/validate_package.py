@@ -1,4 +1,4 @@
-"""Inspect a built Debian artifact without installing it or running remote actions."""
+"""Inspect a built Debian artifact without installing it or changing the system."""
 import ast
 from version import PACKAGE_VERSION
 import configparser
@@ -20,7 +20,9 @@ def field(name):
 for name, expected in {'Package': 'optiplex-studio', 'Version': PACKAGE_VERSION, 'Architecture': 'amd64'}.items():
     assert field(name) == expected, (name, field(name))
 dependencies = field('Depends')
-for name in ('libc6', 'python3', 'python3-gi', 'gir1.2-gtk-3.0', 'openssh-client', 'gvfs-backends', 'gvfs-fuse', 'x-terminal-emulator', 'ca-certificates'):
+for obsolete in ('openssh-client', 'gvfs-backends', 'gvfs-fuse', 'librsvg2-common'):
+    assert obsolete not in dependencies, 'Obsolete runtime dependency: ' + obsolete
+for name in ('libc6', 'python3', 'python3-gi', 'gir1.2-gtk-3.0', 'x-terminal-emulator', 'ca-certificates'):
     assert name in dependencies, 'Missing dependency: ' + name
 with tarfile.open(fileobj=io.BytesIO(subprocess.check_output(['dpkg-deb', '--ctrl-tarfile', str(package)]))) as archive:
     assert {m.name.removeprefix('./') for m in archive if m.isfile()} == {'control'}, 'Unexpected maintainer scripts'
@@ -39,7 +41,7 @@ with tarfile.open(fileobj=io.BytesIO(subprocess.check_output(['dpkg-deb', '--fsy
     assert not any('optiplex-now' in p or p.endswith('.svg') for p in files), 'Wrong application/artwork'
 
 modules = ['app.py', 'core.py', 'project_client.py', 'project_helper.py', 'project_ui.py',
-           'desktop_helper.py', 'godot_focus.py', 'file_browser.py', 'session_helper.py', 'session_ui.py', 'native_tools.py', 'portable_install.py', 'tool_environment.py', 'tools_ui.py', 'conversation_store.py', 'codex_install.py', 'codex_rpc.py', 'embedded_codex.py', 'embedded_ui.py', 'transcript.py', 'style.css']
+           'session_helper.py', 'session_ui.py', 'native_tools.py', 'portable_install.py', 'tool_environment.py', 'tools_ui.py', 'conversation_store.py', 'codex_install.py', 'codex_rpc.py', 'embedded_codex.py', 'embedded_ui.py', 'transcript.py', 'style.css']
 expected = {'usr/bin/optiplex-studio', 'usr/share/doc/optiplex-studio/README.md',
             'usr/share/applications/com.monumentrisk.OptiPlexStudio.desktop'}
 for module in modules:

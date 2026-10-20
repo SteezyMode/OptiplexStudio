@@ -7,7 +7,6 @@ on:
       - 'tools/ensure_studio_demo_controls.py'
       - 'tools/install_studio_demo_controls.sh'
       - 'tools/preflight_studio_demo_controls.sh'
-      - 'tools/run_wolf_studio_demo.sh'
       - 'tests/test_studio_demo_controls.py'
       - '.github/workflows/studio-demo-controls.yml'
   pull_request:
@@ -34,6 +33,5 @@ jobs:
           python3 -m py_compile tools/ensure_studio_demo_controls.py tests/test_studio_demo_controls.py
           bash -n tools/install_studio_demo_controls.sh
           bash -n tools/preflight_studio_demo_controls.sh
-          bash -n tools/run_wolf_studio_demo.sh
       - name: Verify non-destructive demo setup
         run: python3 -m unittest discover -s tests -p 'test_studio_demo_controls.py' -v

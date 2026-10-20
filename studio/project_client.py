@@ -5,94 +5,22 @@ import hashlib
 import json
 import os
 from pathlib import Path, PurePosixPath
-import shlex
-import subprocess
 import tempfile
-import threading
 from urllib.parse import quote
 import zipfile
 import core
 import project_helper as policy
 
-OPERATIONS = {'create', 'inspect_assets', 'put_asset', 'docs', 'ensure_docs', 'save_doc', 'inventory', 'snapshot', 'browse', 'desktop', 'desktop_status', 'list_projects', 'sessions', 'browse_project'}
+OPERATIONS = {'create', 'inspect_assets', 'put_asset', 'docs', 'ensure_docs', 'save_doc', 'inventory', 'snapshot', 'list_projects', 'sessions'}
 
 
-def remote_request(config, project, operation, progress=None, request_timeout=180, **fields):
-    if operation not in OPERATIONS:
-        raise ValueError('Unsupported project operation.')
-    policy.project_name(project)
-    command = core.ssh_args(config, 'edit', project)
-    # Source is the bundled, fixed helper, never a user-provided script or command.
-    source = Path(__file__).with_name('desktop_helper.py' if operation in ('desktop', 'desktop_status') else 'project_helper.py').read_text()
-    if operation == 'sessions':
-        source = Path(__file__).with_name('session_helper.py').read_text() + '\n' + source
-    if operation == 'desktop':
-        focus_source = Path(__file__).with_name('godot_focus.py').read_text()
-        source = 'GODOT_FOCUS_SOURCE = ' + repr(focus_source) + '\n' + source
-    # Assemble the final source BEFORE shell-quoting it into the SSH command.
-    command[-1] = '/usr/bin/python3 -c ' + shlex.quote(source)
-    body = dict(fields, version=policy.VERSION, project=project, operation=operation)
-    payload = json.dumps(body).encode()
-    if len(payload) > policy.MAX_REQUEST:
-        raise ValueError('Transfer request exceeds size limit.')
-    expired = threading.Event()
-    with tempfile.TemporaryFile() as output, tempfile.TemporaryFile() as errors:
-        process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=output, stderr=errors, bufsize=0)
-        def timeout():
-            expired.set()
-            try:
-                process.kill()
-            except ProcessLookupError:
-                pass
-        timer = threading.Timer(request_timeout, timeout)
-        timer.daemon = True
-        timer.start()
-        try:
-            offset = 0
-            try:
-                while offset < len(payload):
-                    count = process.stdin.write(payload[offset:offset + 65536])
-                    if not count:
-                        raise BrokenPipeError('SSH transfer stopped.')
-                    offset += count
-                    if progress:
-                        progress(offset / len(payload))
-            except BrokenPipeError:
-                pass  # Read the actionable SSH/helper error below.
-            finally:
-                process.stdin.close()
-            process.wait()
-            if expired.is_set():
-                raise TimeoutError('Project transfer timed out. Check Tailscale connectivity, then retry.')
-            output.seek(0)
-            data = output.read(48 * 1024 * 1024 + 1)
-            if len(data) > 48 * 1024 * 1024:
-                raise ValueError('Remote response exceeds the transfer limit.')
-            try:
-                response = json.loads(data)
-            except (ValueError, UnicodeDecodeError):
-                errors.seek(0, os.SEEK_END)
-                size = errors.tell()
-                errors.seek(max(0, size - 3000))
-                detail = errors.read().decode(errors='replace').strip()
-                raise RuntimeError('Project connection failed. Verify SSH keys, trusted host key and server Python 3. ' + detail) from None
-            if not response.get('ok') or process.returncode:
-                raise RuntimeError(response.get('error') or 'Remote project operation failed.')
-            return response['result']
-        finally:
-            timer.cancel()
-            if process.poll() is None:
-                process.kill()
-                process.wait()
-
-
-def remote_project_path(config, project):
+def project_path(config, project):
     policy.project_name(project)
     return str(workspace(config) / project)
 
 
 def project_uri(config, project, assets=False):
-    path = Path(remote_project_path(config, project)) / 'assets' if assets else Path(remote_project_path(config, project))
+    path = Path(project_path(config, project)) / 'assets' if assets else Path(project_path(config, project))
     return path.as_uri()
 
 
@@ -196,7 +124,7 @@ def export_snapshot(config, project, manifest, selections, destination, overwrit
         raise ValueError('Selected files exceed 24 MiB; deselect large previews.')
     snapshot = request(config, project, 'snapshot', progress=progress, selections=expected)
     if snapshot['metadata']['project'] != project:
-        raise ValueError('Remote snapshot project mismatch.')
+        raise ValueError('Snapshot project mismatch.')
     files, total = {}, 0
     for item in snapshot['files']:
         path = item['path']
@@ -219,7 +147,7 @@ def export_snapshot(config, project, manifest, selections, destination, overwrit
     if set(files) & set(deleted):
         raise ValueError('Snapshot cannot attach and delete the same file.')
     if set(files) | set(deleted) != set(expected):
-        raise ValueError('Remote snapshot did not contain all selected files.')
+        raise ValueError('Snapshot did not contain all selected files.')
     changes = snapshot.get('diff', '')
     if len(changes.encode()) > 2 * 1024 * 1024 or policy.SECRET.search(changes):
         raise ValueError('Snapshot diff exceeds its limit or contains potential credentials.')
@@ -247,9 +175,9 @@ def export_snapshot(config, project, manifest, selections, destination, overwrit
             temporary.unlink(missing_ok=True)
 
 
-def local_request(config, project, operation, progress=None, request_timeout=180, **fields):
-    """Execute a project operation locally without SSH or Wolf."""
-    if operation not in OPERATIONS - {"desktop", "desktop_status"}:
+def local_request(config, project, operation, progress=None, **fields):
+    """Execute a project operation in the configured local workspace."""
+    if operation not in OPERATIONS:
         raise ValueError("Unsupported local project operation.")
     policy.project_name(project)
     payload = dict(fields, version=policy.VERSION, project=project, operation=operation)
@@ -290,5 +218,5 @@ def workspace(config):
     return path
 
 
-def request(config, project, operation, progress=None, request_timeout=180, **fields):
-    return local_request(config, project, operation, progress, request_timeout, **fields)
+def request(config, project, operation, progress=None, **fields):
+    return local_request(config, project, operation, progress, **fields)
