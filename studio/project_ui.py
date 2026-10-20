@@ -174,7 +174,7 @@ class ProjectUI:
             except Exception as exc:
                 self.remote_folder.end(error=str(exc))
         self.project_task(lambda progress: client.request(config, project, 'browse' if assets else 'browse_project'),
-                          opened, f'Checking {project} folder and SSH access…')
+                          opened, f'Checking {project} project folder…')
 
     def creative_tool(self, name, url):
         context = self.selected_context()
