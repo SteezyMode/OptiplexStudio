@@ -436,12 +436,10 @@ def wait_for_studio_desktop(config, project, on_progress=None, stream_errors=Non
 
 def run_action(config, action, name, on_started=None, on_error=None, on_progress=None, session_id=None, prompt=None, all_sessions=False):
     local = config.get('mode') == 'local'
-    if local:
+    if local and action == 'edit':
         import local_workspace
-        if action == 'edit':
-            return local_workspace.start_godot(name)
-        cmd = local_workspace.command(action, name)
-    else:
+        return local_workspace.start_godot(name)
+    if not local:
         cmd = ssh_args(config, action, name, action in ('code', 'resume'))
     if action in ('code', 'resume'):
         if session_id is not None:
@@ -449,21 +447,20 @@ def run_action(config, action, name, on_started=None, on_error=None, on_progress
             if action != 'resume':
                 raise ValueError('Session ID is only valid for resume.')
             session_id = str(uuid.UUID(session_id))
-            if local:
-                cmd.append(session_id)
-            else:
+        if prompt is not None and (action != 'code' or prompt not in CODEX_TASKS.values()):
+            raise ValueError('Unsupported Codex task.')
+        if local:
+            from persistent_sessions import TmuxSessions
+            backend = TmuxSessions()
+            backend.ensure(name, session_id=session_id, prompt=prompt,
+                           all_sessions=(all_sessions and action == 'resume'))
+            cmd = backend.attach_argv(name)
+        else:
+            if session_id is not None:
                 cmd[-1] += ' ' + shlex.quote(session_id)
-        elif all_sessions and action == 'resume':
-            if local:
-                cmd.append('--all')
-            else:
+            elif all_sessions and action == 'resume':
                 cmd[-1] += ' --all'
-        if prompt is not None:
-            if action != 'code' or prompt not in CODEX_TASKS.values():
-                raise ValueError('Unsupported Codex task.')
-            if local:
-                cmd.append(prompt)
-            else:
+            if prompt is not None:
                 cmd[-1] += ' ' + shlex.quote(prompt)
         # Terminal emulators may hide their child's exit code. A private file
         # carries the SSH result independently of emulator exit-code semantics.
@@ -484,11 +481,11 @@ def run_action(config, action, name, on_started=None, on_error=None, on_progress
             result = int(status.read_text())
             if result:
                 if local:
-                    raise RuntimeError(f'Local Codex exited with code {result}. '
+                    raise RuntimeError(f'Codex workspace terminal exited with code {result}. '
                                        'Check authentication and project permissions.')
                 raise RuntimeError(f'SSH/Codex launch or session failed (exit {result}). '
                                    'Check the Tailscale connection, trusted SSH host key, SSH key and remote Codex installation.')
-            return 'Codex conversation closed.'
+            return ('Codex terminal detached; reconnect to the same project workspace.' if local else 'Codex conversation closed.')
     if action == 'edit':
         import project_client
         stream_errors = []
