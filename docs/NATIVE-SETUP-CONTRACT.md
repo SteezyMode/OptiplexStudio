@@ -55,3 +55,15 @@ Per [accepted ADR-001](ADR-001-LOCAL-FIRST-SHARED-STUDIO-RUNTIME.md), **Studio r
 - **Future separate cross-machine frontend:** not in v1 scope, and would need a different authenticated protocol; not equivalent to NOW streaming.
 
 **Non-goal:** preserve remote-client UI or accidentally create two sets of Codex processes, projects or preferences. No Studio release is ready until a single canonical host runtime is demonstrated.
+
+## Beta session backend checkpoint — 2026-10-20
+
+Development PR #28 now includes a tested **host-owned, project-scoped tmux Codex workspace** adapted from the older draft PR #8:
+
+- `Open Codex Workspace` on a local Studio project creates one project-owned tmux session or attaches to the existing one.
+- A new Studio GUI process can find the same session under the same OS user. Terminal disconnection detaches; it does not explicitly kill the Codex process. Closing Codex itself ends the underlying command/session, at which point saved Codex conversation history is the recovery path.
+- Existing project-policy, project `AGENTS.md` and Codex workspace-write/on-request approvals remain authoritative. Reusing a live session never injects arbitrary keystrokes or launches a second agent to service a new saved-conversation selection.
+- `tmux` is an explicit Debian dependency. Running Codex without tmux is not a supported persistent-workspace mode.
+- **CI green is not live acceptance.** The current tests use a fake tmux runner and isolated project fixtures; a real native GUI terminal/PTY test, Codex authentication, close/reopen, real terminal detachment and the eventual Wolf frontend sharing the *same host-owned* agent remain unverified.
+
+**Do not attempt a complete Mac mini clean-install acceptance yet.** The project creation/session slices alone do not install or integrate Godot, Blender, Codex and LMMS. The Mac mini is a good disposable end-user test target after native creative-tool adapters, first-run dependency guidance, and the release-candidate package exist. Do not switch it to Flatpaks or modify existing projector/media services as part of the setup.
