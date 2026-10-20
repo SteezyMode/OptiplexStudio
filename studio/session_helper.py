@@ -2,7 +2,7 @@
 
 Bundled into the SSH helper; never reads or edits rollout JSONL/SQLite files.
 """
-def list_codex_sessions(base, project, request):
+def list_codex_sessions(base, project, request, codex_binary=None):
     import json
     import os
     from pathlib import Path, PurePosixPath
@@ -20,7 +20,7 @@ def list_codex_sessions(base, project, request):
         raise ValueError('Invalid session scope.')
     deadline = time.monotonic() + 35
     with tempfile.TemporaryFile() as errors:
-        process = subprocess.Popen([str(Path.home() / '.local/bin/codex'), 'app-server', '--listen', 'stdio://'],
+        process = subprocess.Popen([codex_binary or str(Path.home() / '.local/bin/codex'), 'app-server', '--listen', 'stdio://'],
                                    stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=errors)
         selector = selectors.DefaultSelector()
         selector.register(process.stdout, selectors.EVENT_READ)
