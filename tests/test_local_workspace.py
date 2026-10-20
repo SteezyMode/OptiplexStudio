@@ -78,5 +78,44 @@ class NativeLocalWorkspace(unittest.TestCase):
                 core.run_action(LOCAL, 'code', 'game', prompt='untrusted arbitrary prompt')
 
 
+    def test_godot_launch_creates_private_diagnostics_and_detects_exit(self):
+        import subprocess
+        with tempfile.TemporaryDirectory() as d, patch('local_workspace.Path.home', return_value=Path(d)):
+            project_client.request(LOCAL, 'game', 'create')
+            state = Path(d) / '.state'
+            with patch.dict(os.environ, {'XDG_STATE_HOME': str(state)}), patch(
+                'local_workspace.binary', return_value='/fake/godot'), patch(
+                'local_workspace.subprocess.Popen') as launched:
+                launched.return_value.wait.side_effect = subprocess.TimeoutExpired('godot', 0.35)
+                self.assertIn('started for game', local.start_godot('game'))
+                self.assertEqual(launched.call_args.kwargs['stderr'], subprocess.STDOUT)
+                self.assertEqual(launched.call_args.kwargs['cwd'],
+                                 str(Path(d)/'StudioProjects/Godot/game'))
+                log = state / 'optiplex-studio/godot-launch.log'
+                self.assertTrue(log.is_file())
+                self.assertEqual(log.stat().st_mode & 0o777, 0o600)
+                launched.return_value.wait.side_effect = None
+                launched.return_value.wait.return_value = 42
+                with self.assertRaisesRegex(RuntimeError, 'exited immediately.*42'):
+                    local.start_godot('game')
+
+    def test_godot_diagnostics_refuse_symlink_log(self):
+        with tempfile.TemporaryDirectory() as d, patch('local_workspace.Path.home', return_value=Path(d)):
+            project_client.request(LOCAL, 'game', 'create')
+            state = Path(d) / '.state'
+            log = state / 'optiplex-studio/godot-launch.log'
+            log.parent.mkdir(parents=True)
+            victim = Path(d) / 'do-not-touch.txt'
+            victim.write_text('keep')
+            log.symlink_to(victim)
+            with patch.dict(os.environ, {'XDG_STATE_HOME': str(state)}), patch(
+                    'local_workspace.binary', return_value='/fake/godot'), patch(
+                    'local_workspace.subprocess.Popen') as launched:
+                with self.assertRaises(RuntimeError):
+                    local.start_godot('game')
+                launched.assert_not_called()
+                self.assertEqual(victim.read_text(), 'keep')
+
+
 if __name__ == '__main__':
     unittest.main()
