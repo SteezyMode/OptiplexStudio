@@ -223,7 +223,7 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
                 self.rows = []
                 self.combo.remove_all()
                 self.selection_changed(None)
-                self.status.set_text('Project discovery failed: ' + error)
+                self.status.set_text(('Project discovery failed: ' if local_workspace.is_local(config) else 'Project API unavailable: ') + error)
                 return
             self.rows = rows
             self.combo.remove_all()
