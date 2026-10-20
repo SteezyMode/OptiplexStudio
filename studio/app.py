@@ -127,7 +127,7 @@ class Studio(SessionUI, ProjectUI, Gtk.Application):
         project_page.pack_start(self.label('Shared assets, notes and Git history. Browser tools download locally; use Import Assets to transfer their exports into this project.', 'helper'), False, False, 0)
         ai_page = page('AI Workspace')
         grid(ai_page, [
-            ('New Codex Session', lambda _: self.action('code'), 'project'),
+            ('Open Codex Workspace', lambda _: self.action('code'), 'project'),
             ('Resume Session…', self.session_browser, 'project'),
             ('Codex Conversation Picker', lambda _: self.action('resume'), 'project'),
             ('Copy ChatGPT Brief', lambda _: self.copy_brief(), 'project'),
