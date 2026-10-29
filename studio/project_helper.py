@@ -108,6 +108,17 @@ def templates(name, kind='Studio'):
     return documents
 
 
+def godot_scaffold(name):
+    """Safe, minimal Godot capability. Shared by new and existing Studio projects."""
+    project_name(name)
+    return {
+        'project.godot': (f'config_version=5\n\n[application]\nconfig/name="{name}"\n'
+                          'run/main_scene="res://scenes/main.tscn"\n\n'
+                          '[rendering]\nrenderer/rendering_method="gl_compatibility"\n'),
+        'scenes/main.tscn': '[gd_scene format=3]\n\n[node name="Main" type="Node2D"]\n',
+    }
+
+
 class Project:
     def __init__(self, base, name):
         self.name = project_name(name)
@@ -266,11 +277,35 @@ class Project:
             except (OSError, subprocess.TimeoutExpired):
                 return '[Git unavailable]', False
 
+    def has_godot(self):
+        # A symlink or invalid project.godot is not a supported native workspace.
+        return self.current_hash('project.godot', MAX_TEXT) is not None
+
+    def ensure_godot(self):
+        """Add missing Godot files without migrating or overwriting any work."""
+        if self.has_godot():
+            return {'ready': True, 'created': []}
+        files = godot_scaffold(self.name)
+        created = []
+        # Scene first: a successful project.godot never points at a missing
+        # Studio-created scene. Existing scene content remains authoritative.
+        for path in ('scenes/main.tscn', 'project.godot'):
+            if self.current_hash(path, MAX_TEXT) is None:
+                try:
+                    self.write(path, files[path].encode('utf-8'), None, MAX_TEXT)
+                    created.append(path)
+                except FileExistsError:
+                    # Another Studio frontend may have initialized it concurrently.
+                    # Never replace even a concurrently created file.
+                    self.read(path, MAX_TEXT)
+        return {'ready': self.has_godot(), 'created': created}
+
     def metadata(self):
         branch, _ = self.git(['branch', '--show-current'])
         commit, _ = self.git(['log', '-1', '--format=%h %s'])
         status, okay = self.git(['status', '--porcelain', '--untracked-files=normal'])
-        return {'project': self.name, 'type': self.kind, 'branch': branch or '(unborn/detached)',
+        return {'project': self.name, 'type': self.kind, 'has_godot': self.has_godot(),
+                'branch': branch or '(unborn/detached)',
                 'commit': commit or '(no commits)', 'dirty': bool(status) if okay else None}
 
     def inventory(self):
@@ -392,9 +427,8 @@ def create_project(base, name, kind='Studio'):
             with project.parent(folder + '/placeholder', create=True):
                 pass
         files = templates(name, kind)
-        files.update({'project.godot': f'config_version=5\n\n[application]\nconfig/name="{name}"\nrun/main_scene="res://scenes/main.tscn"\n\n[rendering]\nrenderer/rendering_method="gl_compatibility"\n',
-                      'scenes/main.tscn': '[gd_scene format=3]\n\n[node name="Main" type="Node2D"]\n',
-                      '.gitignore': '.godot/\n.studio*\n*.tmp\n'})
+        files.update(godot_scaffold(name))
+        files['.gitignore'] = '.godot/\n.studio*\n*.tmp\n'
         files['studio-project.json'] = json.dumps({'version': 2, 'type': 'Studio', 'engine': 'godot'}) + '\n'
         for filename_, content in files.items():
             project.write(filename_, content.encode(), None, MAX_TEXT)
@@ -442,6 +476,8 @@ def handle(request, base=None):
         return create_project(base, name, request.get('template', 'Studio'))
     project = Project(base, name)
     try:
+        if operation == 'ensure_godot':
+            return project.ensure_godot()
         if operation == 'inspect_assets':
             category = request['category']
             if category not in CATEGORIES or len(request['names']) > 100:
