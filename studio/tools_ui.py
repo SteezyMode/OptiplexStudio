@@ -31,7 +31,7 @@ class ToolsUI:
         return False
 
     def prepare_character_lab(self, _=None):
-        """Direct installation after user consent; not a normal app startup task."""
+        """Install general AI creative integrations with explicit consent."""
         from pathlib import Path
         import sys
         import core
@@ -44,12 +44,13 @@ class ToolsUI:
         prompt = Gtk.MessageDialog(
             transient_for=self.window, modal=True, message_type=Gtk.MessageType.QUESTION,
             buttons=Gtk.ButtonsType.YES_NO,
-            text='Install the Blender Character Lab?')
+            text='Install AI creative tools for all projects?')
         prompt.format_secondary_text(
             'Install and enable MPFB and its Bridge into your existing Blender profile; '
             'install Blender visual MCP and register two local MCP servers in your '
             'existing Codex configuration. This downloads third-party packages '
             'and executes their installers. Rigger is installed but not enabled. '
+            'These tools support props, environments, flora, humanoids, and animation. '
             'Existing MCP registrations are preserved, and Studio project files '
             'are untouched. MPFB system assets and a live Blender/AI test remain '
             'necessary afterward.')
@@ -60,17 +61,17 @@ class ToolsUI:
         script = Path(__file__).with_name('character_lab_setup.py')
         try:
             if not script.is_file():
-                raise FileNotFoundError('Character Lab helper is missing from this Studio build.')
+                raise FileNotFoundError('AI creative-tools setup helper is missing from this Studio build.')
             argv = core.terminal_args([
                 sys.executable, '-B', str(script), 'install', '--yes',
                 '--blender', blender, '--codex', codex])
             subprocess.Popen(argv, stdin=subprocess.DEVNULL, start_new_session=True)
         except (OSError, RuntimeError) as exc:
-            self.notice('Character Lab installation could not start', str(exc))
+            self.notice('AI creative-tools installation could not start', str(exc))
             return
         if hasattr(self, 'status'):
-            self.status.set_text('Character Lab installer launched. Reopen Blender and Codex after '
-                                 'installation, then run the Character Lab live tests.')
+            self.status.set_text('AI creative-tools installer launched. Reopen Blender and Codex after '
+                                 'installation, then test a project-scoped creative task.')
 
     def save_config(self, candidate):
         # Preserve unknown settings and use the same atomic persistence as Settings.
@@ -345,10 +346,10 @@ class ToolsUI:
         connection_row.pack_start(runtime_button, False, False, 0)
         box.pack_start(connection_row, False, False, 0)
         experimental = Gtk.Box(spacing=6)
-        experimental.pack_start(self.label('Character Lab · experimental, optional for Alpha 1',
+        experimental.pack_start(self.label('AI creative tools · general Blender automation (experimental)',
                                            'helper'), True, True, 0)
         experimental.pack_start(
-            self.button('Install Character Lab…', lambda _: ToolsUI.prepare_character_lab(self)), False, False, 0)
+            self.button('Install AI creative tools…', lambda _: ToolsUI.prepare_character_lab(self)), False, False, 0)
         experimental.pack_start(
             self.button('Install steps', lambda _: Gtk.show_uri_on_window(
                 dialog,
