@@ -13,6 +13,7 @@ sudo apt-get install -y --no-install-recommends "$package"
 test -x /usr/bin/optiplex-studio
 test -r /usr/lib/optiplex-studio/app.py
 test -r /usr/lib/optiplex-studio/core.py
+test -r /usr/lib/optiplex-studio/character_lab_setup.py
 desktop-file-validate /usr/share/applications/com.monumentrisk.OptiPlexStudio.desktop
 tmp="$(mktemp -d -t studio-installed.XXXXXX)"
 cleanup() {
