@@ -102,8 +102,28 @@ class Isolation(unittest.TestCase):
         self.assertEqual(params['sandbox'], 'workspace-write')
         self.assertEqual(params['approvalsReviewer'], 'user')
         self.assertIn(memory, params['developerInstructions'])
+        self.assertIn('props, vegetation, architecture, weapons', params['developerInstructions'])
+        self.assertIn('MPFB MCP only when human anatomy', params['developerInstructions'])
+        self.assertIn('Rigger is', params['developerInstructions'])
+        self.assertIn('Do not overwrite existing work', params['developerInstructions'])
         self.assertIn(A, json.loads((self.base / 'one' / store.ASSOCIATIONS).read_text())['sessions'])
         self.assertFalse((self.base / 'two' / store.ASSOCIATIONS).exists())
+
+    def test_new_conversation_without_ai_memory_has_general_creative_routing(self):
+        # A fresh project should get the same tool-aware workflow automatically,
+        # without the user selecting character, vegetation or prop modes.
+        (self.base / 'one/AI_MEMORY.md').write_text('')
+        with patch('embedded_codex.AppServer', return_value=self.server), \
+             patch('native_tools.discover', return_value='/codex'):
+            self.conversation.connect()
+        params = next(call.args[1] for call in self.server.request.call_args_list
+                      if call.args[0] == 'thread/start')
+        self.assertIn('gameplay', params['developerInstructions'])
+        self.assertIn('MPFB MCP only when human anatomy', params['developerInstructions'])
+        self.assertIn('Rigger is', params['developerInstructions'])
+        self.assertEqual(params['config']['sandbox_workspace_write']['network_access'], False)
+        self.assertEqual(params['approvalPolicy'], 'on-request')
+        self.assertNotIn('Ask the user what to work on next.', params['developerInstructions'])
 
     def test_fail_closed_for_missing_or_broadened_permissions(self):
         for change in ({'sandbox': {}}, {'approvalPolicy': 'never'},
