@@ -205,10 +205,8 @@ class AIComposer(unittest.TestCase):
         self.assertEqual([entry[0] for entry in groups[0]], ['New Conversation', 'Resume Conversation'])
         self.assertEqual([entry[0] for entry in groups[1]], ['Review Changes', 'Fix Godot Errors', 'Validate Project'])
         self.assertEqual([entry[2] for entry in groups[1]], ['project', 'godot', 'godot'])
-        self.assertEqual([entry[0] for entry in groups[2]], ['Character Study · MPFB + Blender'])
-        groups[2][0][1](None)
-        fake.open_embedded.assert_called_with(prompt=core.CHARACTER_STUDY_PROMPT)
-        self.assertEqual([entry[0] for entry in groups[3]], ['Find Conversations', 'External Codex Terminal', 'Explain Project', 'Copy ChatGPT Brief'])
+        self.assertEqual(len(groups), 3)
+        self.assertEqual([entry[0] for entry in groups[2]], ['Find Conversations', 'External Codex Terminal', 'Explain Project', 'Copy ChatGPT Brief'])
         for name, callback, _ in groups[1]:
             callback(None)
             fake.open_embedded.assert_called_with(prompt=core.CODEX_TASKS[name])
