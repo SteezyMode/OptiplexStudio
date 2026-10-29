@@ -11,7 +11,7 @@ import zipfile
 import core
 import project_helper as policy
 
-OPERATIONS = {'create', 'inspect_assets', 'put_asset', 'docs', 'ensure_docs', 'save_doc', 'inventory', 'snapshot', 'list_projects', 'sessions'}
+OPERATIONS = {'create', 'ensure_godot', 'inspect_assets', 'put_asset', 'docs', 'ensure_docs', 'save_doc', 'inventory', 'snapshot', 'list_projects', 'sessions'}
 
 
 def project_path(config, project):
