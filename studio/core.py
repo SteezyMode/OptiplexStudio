@@ -34,6 +34,23 @@ def terminal_args(command):
     raise RuntimeError('Install a supported terminal: xterm, GNOME Terminal, Konsole or XFCE Terminal.')
 
 
+CHARACTER_STUDY_PROMPT = """Create a non-destructive character study in THIS Studio Project using the registered
+studio-mpfb and studio-blender MCP servers. This is a visual art-direction task,
+not a software-installation task. First query MPFB status and Blender scene.
+If either server, system asset pack or live Blender connection is missing,
+state which check failed and stop; do not claim that modeling succeeded.
+Use an anatomically coherent MPFB base, then vary proportions and expression
+with a deliberate asymmetric silhouette. Save an editable .blend in models/
+and a separate glTF/.glb export in assets/3d/ with new names; do not modify
+or overwrite existing Patient files or other project sources.
+Use Blender visual tools to inspect front, side and three-quarter views,
+then make one measured refinement from that feedback. If images are not
+visible through Studio's client, report that and request a screenshot;
+do not fabricate visual judgments. Record exact generated file paths,
+observed MCP tool results and remaining artistic issues. Keep Rigger disabled
+and do not initiate video or mocap. Confirm with the user before destructive
+actions or before changing existing scenes."""
+
 CODEX_TASKS = {
     'Review Changes': 'Read AGENTS.md and the project documents. Review current uncommitted changes for defects and risks. Report findings without changing files or committing.',
     'Explain Project': 'Read AGENTS.md and the project documents. Explain this project, its structure, current state, and useful next steps. Do not change files or commit.',
