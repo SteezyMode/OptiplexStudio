@@ -1,4 +1,4 @@
-"""Explicit, local-only preparation for experimental Blender character tools.
+"""Explicit, local-only preparation of shared AI creative tool dependencies.
 
 This is NOT invoked by Studio startup, package installation, or Codex.
 Source is pinned and only downloaded/executed after the user requests setup.
@@ -71,7 +71,7 @@ def prepare(home=None):
     root.mkdir(parents=True, exist_ok=True, mode=0o700)
     if root.is_symlink():
         raise RuntimeError('Character Lab directory may not be a symlink.')
-    print('Character Lab is experimental. No Blender/MPFB/Codex settings will be changed.', flush=True)
+    print('AI creative-tool integration is experimental. No Blender/MPFB/Codex settings will be changed.', flush=True)
     print('Source repositories and Python dependencies are downloaded into:', root, flush=True)
     print('Python packaging commands can execute pinned third-party build code.', flush=True)
     mpfb = clone_pinned('mpfb-mcp', root)
@@ -154,5 +154,5 @@ if __name__ == '__main__':
     try:
         raise SystemExit(main())
     except (OSError, RuntimeError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as exc:
-        print('Character Lab preparation failed: ' + str(exc), file=sys.stderr)
+        print('AI creative-tool preparation failed: ' + str(exc), file=sys.stderr)
         raise SystemExit(2)
