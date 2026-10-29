@@ -163,6 +163,15 @@ def command(config, application, project=None):
     executable = discover(config, application)
     cwd = project_directory(config, project) if project else project_client.workspace(config)
     args = [executable]
+    # Each editor starts in the most relevant existing project-owned folder.
+    # Do not invent native file argv or create directories as a side effect.
+    if project:
+        folder = {'blender': 'models', 'blockbench': 'models',
+                  'lmms': 'music', 'krita': 'art'}.get(application)
+        if folder:
+            target = cwd / folder
+            if target.is_dir() and not target.is_symlink():
+                cwd = target
     if application == 'vscodium':
         if not project:
             raise ValueError('Select a project to open in VSCodium.')
@@ -170,8 +179,8 @@ def command(config, application, project=None):
     if application == 'godot':
         if not project:
             raise ValueError('Select a Studio project.')
-        if not (cwd / 'project.godot').is_file():
-            raise ValueError('This project has no Godot scaffold. Create a new Studio project.')
+        if not (cwd / 'project.godot').is_file() or (cwd / 'project.godot').is_symlink():
+            raise ValueError('This project has no valid Godot scaffold. Use Add Godot in Creative Tools.')
         args += ['--editor', '--path', str(cwd)]
     return args, cwd
 
