@@ -320,8 +320,9 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
         has_godot = p.get('has_godot', True) if selected else False
         for button in getattr(self, 'godot_buttons', []):
             button.set_sensitive(selected and not self.busy and has_godot)
-            button.set_tooltip_text('Godot project ready; executable configured in Settings.'
-                                    if has_godot else 'This Project needs Add Godot in Creative Tools.')
+            if hasattr(button, 'set_tooltip_text'):
+                button.set_tooltip_text('Godot project ready; executable configured in Settings.'
+                                        if has_godot else 'This Project needs Add Godot in Creative Tools.')
         if hasattr(self, 'add_godot_button'):
             self.add_godot_button.set_sensitive(selected and not self.busy and not has_godot)
             self.godot_capability_note.set_text(
