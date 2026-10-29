@@ -223,7 +223,7 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
         grid(self.ai_controls, [
             ('New Conversation', lambda _: self.open_embedded(), 'project'),
             ('Resume Conversation', self.session_browser, 'project')], button_name='setting')
-        prompt_label = self.label('Custom prompt', 'helper')
+        prompt_label = self.label('Describe what to create or change', 'helper')
         self.ai_controls.pack_start(prompt_label, False, False, 0)
         self.ai_prompt = Gtk.TextView(wrap_mode=Gtk.WrapMode.WORD_CHAR)
         self.ai_prompt.set_name('ai-prompt')
@@ -247,14 +247,10 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
         grid(self.ai_controls, [
             (name, lambda _, n=name: self.open_embedded(prompt=core.CODEX_TASKS[n]),
              'project' if name == 'Review Changes' else 'godot') for name in presets], columns=3, button_name='setting')
-        grid(self.ai_controls, [
-            ('Character Study · MPFB + Blender', lambda _: self.open_embedded(
-                prompt=core.CHARACTER_STUDY_PROMPT), 'project')
-        ], columns=1, button_name='setting')
         self.ai_controls.pack_start(
-            self.label('Character Study uses installed Blender MCP tools and waits for your '
-                       'prompt submission. It never activates Rigger or changes previous models.',
-                       'helper'), False, False, 0)
+            self.label('Ask for props, environments, vegetation, characters, animation, '
+                       'gameplay or music. Codex uses relevant installed project tools; '
+                       'no separate labs or creation modes.', 'helper'), False, False, 0)
         self.ai_advanced = Gtk.Expander(label='More actions')
         self.ai_advanced.set_name('ai-advanced')
         advanced = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)

@@ -81,9 +81,17 @@ class Conversation:
                     raise ValueError('Thread directory differs from the verified Project; use terminal recovery.')
                 params['threadId'] = identifier
             else:
+                import core
                 args, _ = native_tools.codex_command(self.config, 'code', self.project)
+                # One general creation workflow for all new project conversations.
+                # Project AI_MEMORY remains additional context, never discarded.
+                instructions = core.CREATIVE_WORKFLOW_GUIDANCE
                 if '--' in args:
-                    params['developerInstructions'] = args[args.index('--') + 1].removesuffix('\n\nAsk the user what to work on next.')
+                    memory = args[args.index('--') + 1].removesuffix(
+                        '\n\nAsk the user what to work on next.')
+                    if memory.strip():
+                        instructions += '\n\n' + memory
+                params['developerInstructions'] = instructions
                 params['ephemeral'] = False
             result = server.request('thread/resume' if identifier else 'thread/start', params)
             self.check_permissions(result)

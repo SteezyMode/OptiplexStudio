@@ -98,7 +98,24 @@ tool setup. Shell profiles and saved Codex settings are unchanged.
 
 See [installation behavior, publisher trust, first-run steps and deferred work](docs/NATIVE-TOOL-INSTALLATION.md).
 
-Experimental character tools are opt-in. In Settings, **Install Character Lab…** installs and enables MPFB and its Bridge in the configured Blender, installs visual MCP in a private Python environment, registers two localhost MCP servers with the selected Codex CLI, and installs Rigger **disabled**. MPFB's system assets and real Blender/Codex connectivity still require first-run verification. In **AI Workspace → Character Study · MPFB + Blender**, Codex gets an explicit project-scoped model/inspect/refine/export workflow. This experimental path is outside the frozen Alpha 1 gates; see [Character Lab setup and safety](docs/CHARACTER-LAB.md).
+Studio uses **one project-scoped AI Workspace for every creative task**. Ask for
+props, weapons, plants, landscapes, characters, animation, interactions, or music
+in the ordinary prompt. Codex chooses from the configured tools: Blender visual
+MCP for general 3D work, MPFB MCP when a human base is useful, Godot for scenes
+and playback, LMMS for audio, with Rigger dormant until animation experiments
+are explicitly requested. There are no asset-type labs or separate creation modes.
+All new embedded Codex conversations receive this general workflow while keeping
+the same project isolation and approval rules. Real agent/tool roundtrips remain
+subject to physical acceptance tests.
+
+**Settings → Install AI creative tools…** offers a single opt-in integration
+step for Blender automation, MPFB, MPFB Bridge, MCP for Blender and dormant Rigger.
+The installer downloads pinned upstream components into a user-level directory,
+uses the configured Blender executable and registers two loopback-only Codex
+servers without overwriting existing entries. It is not an offline vendored
+payload; internet is required for initial installation. MPFB system assets and
+real Blender bridge startup still need on-device first-run work. See the
+[shared AI creative tools guide](docs/CHARACTER-LAB.md).
 
 VSCodium is an optional editor. Open Current Project passes the validated selected
 Project directory to the native editor. Future Codex change-review integration
