@@ -112,30 +112,44 @@ def inspect(config, application):
 
 
 def codex_authentication(config):
-    """Check the official CLI's logged-in state; don't infer it from installation."""
-    executable_path = discover(config, 'codex')
+    """Read-only CLI credential check; this is not proof of live model access.
+
+    Deliberately never display arbitrary CLI output, which could contain secrets.
+    A nonzero exit without a definite logged-out message is an error, not proof
+    that the user needs to sign in again.
+    """
+    try:
+        executable_path = discover(config, 'codex')
+    except (ValueError, OSError, RuntimeError):
+        return {'status': 'Missing', 'detail': 'Install or select Codex in Settings.'}
     try:
         result = subprocess.run([executable_path, 'login', 'status'],
                                 capture_output=True, text=True, timeout=12,
                                 stdin=subprocess.DEVNULL)
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        return {'status': 'Error', 'detail': str(exc)}
-    message = (result.stdout + '\n' + result.stderr).strip()[-400:]
-    if result.returncode == 0 and 'logged in' in message.lower() and 'not logged in' not in message.lower():
-        return {'status': 'Ready', 'detail': 'ChatGPT account connected.'}
-    if 'not logged in' in message.lower() or result.returncode != 0:
-        return {'status': 'Setup required', 'detail': 'Connect your ChatGPT account to use Codex.'}
-    return {'status': 'Error', 'detail': 'Codex returned an unrecognized login status.'}
+    except subprocess.TimeoutExpired:
+        return {'status': 'Error', 'detail': 'Codex login status timed out. Retry the check.'}
+    except OSError:
+        return {'status': 'Error', 'detail': 'Could not start Codex login status. Check the executable and retry.'}
+    message = (result.stdout + '\n' + result.stderr).lower()
+    if 'not logged in' in message or 'not authenticated' in message:
+        return {'status': 'Setup required', 'detail': 'Connect a supported account in Settings.'}
+    if result.returncode == 0 and 'logged in' in message:
+        return {'status': 'Signed in', 'detail': 'Codex reports saved authentication; live AI access has not been tested.'}
+    return {'status': 'Error', 'detail': 'Codex could not confirm authentication. Retry; do not delete credentials.'}
 
 
-def begin_codex_login(config):
-    """Launch official browser-based authentication in a terminal, without handling tokens."""
+def begin_codex_login(config, *, device_auth=False):
+    """Launch the official CLI sign-in in a terminal; never handle tokens."""
     import core
     executable_path = discover(config, 'codex')
-    terminal = core.terminal_args([executable_path, 'login'])
+    args = [executable_path, 'login']
+    if device_auth:
+        args.append('--device-auth')
+    terminal = core.terminal_args(args)
     subprocess.Popen(terminal, stdin=subprocess.DEVNULL, start_new_session=True)
-    return 'Sign in using the browser window opened by Codex, then select Verify connection.'
-
+    if device_auth:
+        return 'In the Codex terminal, follow the device-code instructions. Then verify sign-in.'
+    return 'Follow the official Codex sign-in instructions in the terminal/browser, then verify sign-in.'
 
 def project_directory(config, project):
     project_helper.project_name(project)

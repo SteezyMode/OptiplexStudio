@@ -1,6 +1,6 @@
 # Studio releases: one Current .deb
 
-**Current published release:** v0.4.12 (October 29, 2026). The authoritative install link is the [Current Studio .deb](https://github.com/SteezyMode/OptiplexStudio/releases/latest/download/optiplex-studio_amd64.deb) on the repository front page. All previous versioned releases remain available for rollback.
+**Current published release:** use [GitHub Releases/latest](https://github.com/SteezyMode/OptiplexStudio/releases/latest) as the source of truth. The authoritative install link is the [Current Studio .deb](https://github.com/SteezyMode/OptiplexStudio/releases/latest/download/optiplex-studio_amd64.deb) on the repository front page. All previous versioned releases remain available for rollback.
 
 ## What publishes a release
 
