@@ -48,7 +48,17 @@ Prefer supported native applications and formats over new integration infrastruc
   archive stored on its source machine is insufficient.
   References: [#6](https://github.com/SteezyMode/OptiplexStudio/issues/6), [#27](https://github.com/SteezyMode/OptiplexStudio/issues/27).
 
-## Optional artwork experiment, not an extra alpha gate\n\n[Character Lab](CHARACTER-LAB.md) stages MPFB MCP and Rigger for a separate Patient V4 art-direction experiment. The visual Blender MCP and MPFB extension require explicit local setup. None of this changes A1–A5 or the frozen v1 contract; do not mark alpha gates complete from tool installation alone.\n\n## Completion standard
+## Shared AI creative integrations (not an extra alpha gate)
+
+[AI Creative Tools](CHARACTER-LAB.md) installs general Blender automation,
+specialized MPFB human anatomy controls and dormant Rigger as one toolchain.
+Codex uses these according to the user's creative request inside the same
+project; separate character, prop or plant labs are not part of Studio.
+This does not change A1–A5 or frozen issue #3. Acceptance still requires
+actual editable sources, Godot playback, completed agent tool calls and
+recovery on supported hardware.
+
+## Completion standard
 
 Each gate requires a dated evidence note (OS, package version, Git commit, machine,
 test steps, actual results and any failure/recovery). Distinguish source unit tests,
