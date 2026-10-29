@@ -167,7 +167,7 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
                     problems.append(name + ': ' + details['status'])
                 if name == 'codex' and details['path']:
                     auth = native_tools.codex_authentication(self.config)
-                    if auth['status'] != 'Ready':
+                    if auth['status'] != 'Signed in':
                         problems.append('Codex: ' + auth['status'])
             return problems
         def complete(problems, error):
