@@ -97,9 +97,8 @@ class CharacterLabUI(unittest.TestCase):
         host = MagicMock()
         host.window = None
         dialog = MagicMock()
-        dialog.run.return_value = 0
+        dialog.run.return_value = tools_ui.Gtk.ResponseType.NO
         with patch.object(tools_ui.Gtk, 'MessageDialog', return_value=dialog), \
-             patch.object(tools_ui.Gtk.ResponseType, 'YES', 1), \
              patch('tools_ui.subprocess.Popen', side_effect=AssertionError('Unexpected launch')):
             tools_ui.ToolsUI.prepare_character_lab(host)
         dialog.destroy.assert_called_once()
@@ -112,9 +111,8 @@ class CharacterLabUI(unittest.TestCase):
         host = MagicMock()
         host.window = None
         dialog = MagicMock()
-        dialog.run.return_value = 1
+        dialog.run.return_value = tools_ui.Gtk.ResponseType.YES
         with patch.object(tools_ui.Gtk, 'MessageDialog', return_value=dialog), \
-             patch.object(tools_ui.Gtk.ResponseType, 'YES', 1), \
              patch('core.terminal_args', side_effect=lambda command: ['terminal', '--'] + command) as terminal, \
              patch('tools_ui.subprocess.Popen') as spawn:
             tools_ui.ToolsUI.prepare_character_lab(host)
