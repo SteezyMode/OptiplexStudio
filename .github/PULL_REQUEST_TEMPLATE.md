@@ -1,22 +1,20 @@
-## Purpose
-What behavior or acceptance criterion does this change address? Link the issue or frozen Studio v1 gate.
+## User problem / acceptance
+Describe the observed problem or user outcome, link the relevant issue, and say what someone must actually observe to call it fixed.
 
-## What changed
-Briefly describe files/components. Distinguish packaged GTK code from host/Wolf experiments.
+## Scope and boundaries
+Identify the changed components and important non-goals. Describe how old projects, documents, Codex sessions, local configuration, and unrelated NOW/Wolf/server services are preserved.
 
-## Verification
-- [ ] `make -f Makefile.studio check`
-- [ ] `make -f Makefile.studio package`
-- [ ] Isolated GTK/package verification
-- [ ] Live integration checks where applicable (or state **not run**)
+## Verification and evidence
+- [ ] Focused regressions (commands/results):
+- [ ] Full `Validate OptiPlex Studio` PR CI (link/run):
+- [ ] GTK + Debian package and installed-package smoke checks:
+- [ ] Real workstation acceptance (evidence, or **NOT TESTED**):
 
-Include commands and results. A headless pass is not a GUI acceptance.
+Do not equate mocked API responses, headless engine tests, or a binary version check with successful native tool use or authenticated Codex.
 
-## Safety and compatibility
-- [ ] No unrelated services or projects changed
-- [ ] Project files, Codex sessions, config and settings preserved
-- [ ] No new v1.0 release scope without approval
-- [ ] Rollback and known remaining gaps documented
+## Release and rollback
+- [ ] No version bump unless deliberately publishing a new Current .deb.
+- [ ] If published: main SHA, release tag, current link, package checksum verified.
+- [ ] Existing data/settings preserved; rollback and remaining limitations documented.
 
-## Manual acceptance / evidence
-What should a reviewer actually click, run or observe? Link logs or concise results without private data.
+**Next action:** One concrete follow-up, not a second roadmap.
