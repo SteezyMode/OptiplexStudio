@@ -160,8 +160,10 @@ class ToolsUI:
                         install_buttons[name].set_label('Cancel')
                         continue
                 status = result['status']
-                if status in ('Ready', 'Components verified'):
+                if status == 'Ready' and name != 'codex':
                     marker, color, summary = '●', '#34a853', 'READY'
+                elif name == 'codex' and status == 'Components verified':
+                    marker, color, summary = '●', '#e5a53d', 'RUNTIME VERIFIED · AUTH SEPARATE'
                 elif status == 'Missing':
                     marker, color, summary = '○', '#999999', 'NOT INSTALLED · OPTIONAL'
                 elif status in ('Error', 'Broken'):
@@ -177,16 +179,17 @@ class ToolsUI:
         def verify_auth(_=None):
             def done(result, error):
                 if error:
-                    auth_state.set_text('Codex authentication: ' + error)
+                    auth_state.set_text('Codex authentication check failed. Recheck in Settings.')
                 else:
-                    auth_state.set_markup(('<span foreground="#34a853"><b>● CONNECTED</b></span>' if result['status'] == 'Ready' else '<span foreground="#e5a53d"><b>● ACTION NEEDED</b></span>') + '  Codex: ' + GLib.markup_escape_text(result['status'] + ' — ' + result['detail']))
+                    summary = '● CLI SIGNED IN · AI UNVERIFIED' if result['status'] == 'Signed in' else '● ' + result['status'].upper()
+                    auth_state.set_markup('<span foreground="#e5a53d"><b>' + GLib.markup_escape_text(summary) + '</b></span>  ' + GLib.markup_escape_text(result['detail']))
                 if hasattr(self, 'refresh_tool_health'):
                     self.refresh_tool_health()
             background(lambda: native_tools.codex_authentication(self.config), done)
 
-        def connect_codex(_=None):
+        def connect_codex(_=None, *, device_auth=False):
             try:
-                message = native_tools.begin_codex_login(self.config)
+                message = native_tools.begin_codex_login(self.config, device_auth=device_auth)
                 auth_state.set_text(message)
             except (OSError, RuntimeError, ValueError) as exc:
                 auth_state.set_text('Codex sign-in could not start: ' + str(exc))
@@ -200,9 +203,9 @@ class ToolsUI:
                 def finished(result, error):
                     if not state['alive']:
                         return
-                    if not error and result['status'] == 'Ready':
+                    if not error and result['status'] == 'Signed in':
                         attempts[0] = 24
-                        auth_state.set_markup('<span foreground="#34a853"><b>● CONNECTED</b></span>  Codex account authorized')
+                        auth_state.set_markup('<span foreground="#e5a53d"><b>● CLI SIGNED IN</b></span>  Live AI access still requires a project test')
                         if hasattr(self, 'refresh_tool_health'):
                             self.refresh_tool_health()
                 background(lambda: native_tools.codex_authentication(self.config), finished)
@@ -259,8 +262,12 @@ class ToolsUI:
             row.pack_start(statuses[name], False, False, 0)
             rows.pack_start(row, False, False, 0)
         connection_row = Gtk.Box(spacing=6)
-        connection_row.pack_start(self.button('Connect Codex…', connect_codex), False, False, 0)
-        connection_row.pack_start(self.button('Verify connection', verify_auth), False, False, 0)
+        connect_button = self.button('Connect Codex…', connect_codex)
+        device_button = self.button('Device-code sign-in…', lambda _: connect_codex(device_auth=True))
+        verify_button = self.button('Verify sign-in', verify_auth)
+        mutable_controls.extend((connect_button, device_button, verify_button))
+        for control in (connect_button, device_button, verify_button):
+            connection_row.pack_start(control, False, False, 0)
         runtime_button = self.button('Check runtime', check_runtime)
         mutable_controls.append(runtime_button)
         connection_row.pack_start(runtime_button, False, False, 0)
