@@ -35,4 +35,5 @@ experiments. Those experiments are not current Studio integrations.
 
 - [Publishing releases](docs/RELEASING.md)
 - [Current status and limitations](docs/CURRENT-STATUS.md)
+- [Alpha 1 roadmap and acceptance gates](docs/ALPHA-1-ROADMAP.md)
 - [Contributor guide](CONTRIBUTING.md)
