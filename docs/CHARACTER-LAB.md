@@ -1,16 +1,20 @@
-# Studio Character Lab — one creative loop
+# AI Creative Tools — a shared game-asset workflow
 
-**Experimental integration; not part of Studio's frozen Alpha 1 exit gates.**
-The goal is one project-aware Codex conversation that creates and **sees** a
-Blender character and leaves editable sources for Godot, not a launcher
-collection. The user explicitly chooses to install third-party packages.
+**One Studio project and one AI conversation for all creative work.**
+Blender and visual MCP are general-purpose tools for models, props, weapons,
+flora, environments, materials, and animation. MPFB is a specialized extension
+for anatomically coherent humans, not a character-specific Studio mode;
+Rigger stays installed but disabled until an explicit retargeting/mocap task.
+Godot creates/tests scenes and gameplay; LMMS handles music/audio. Codex
+selects relevant available tools based on the user's request, not a lab type.
+This experimental integration is not a new Alpha 1 gate.
 
-## On-device installation (v0.4.18)
+## One on-device toolchain install (v0.4.19)
 
 1. Install the [Current Studio .deb](https://github.com/SteezyMode/OptiplexStudio/releases/latest)
    on a supported Linux workstation. In Studio Settings, install or choose
    **Blender 5.2+** and **Codex**.
-2. Choose **Settings → Install Character Lab…**, review its disclosure and
+2. Choose **Settings → Install AI creative tools…**, review its disclosure and
    approve. Studio runs the actual installation in a local terminal. It may
    download several hundred megabytes and execute upstream packaging scripts.
 3. The installer:
@@ -36,18 +40,20 @@ collection. The user explicitly chooses to install third-party packages.
    and import once inside Blender **MPFB → Apply assets → Library settings →
    Load pack from zip file**. Restart Blender.
 6. Open Studio, create a **disposable** unified project, and open
-   **AI Workspace → Character Study · MPFB + Blender**. Review and send the
-   prepared prompt; this step starts real Codex model usage. Save and compare
-   the editable `.blend` and generated `.glb` before deciding whether
-   the new approach improves Patient.
+   **AI Workspace**. In the normal prompt, ask Codex to model a human, dead tree,
+   weapon or prop, inspect the Blender result and export it into the Godot project.
+   This starts real Codex model usage. No asset-category button is required.
 
 This is not yet automatic end-to-end provisioning: the MakeHuman asset pack and
 actual Blender bridge session still require a short first-run step. In
 particular **Codex MCP registration is not a live AI tool-call test**.
 
-## A focused character test
+## General creative workflow acceptance (one project)
 
-- First ask for the MPFB status and Blender scene; missing tools or assets
+- For a *general prop* or flora study, use Blender visual MCP to create an
+  editable .blend, inspect the silhouette from multiple angles, refine it and
+  export .glb to the active project. MPFB is not needed for these assets.
+- For a human model, first ask for MPFB status and Blender scene; missing tools or assets
   must be reported rather than worked around with a fake generated model.
 - Start from an anatomically coherent MPFB body; improve posture, face,
   asymmetry and surface treatment with measurable changes.
@@ -100,3 +106,11 @@ real integration blocker to fix, not a justification to bypass isolation.
 - [MCP for Blender install and safe-mode details](https://www.mcp-for-blender.com/docs/installation)
 - [Blender 5.2 extension CLI](https://docs.blender.org/manual/en/5.2/advanced/command_line/extension_arguments.html)
 - [Rigger rigging, retargeting, and Godot export](https://github.com/asu37/Rigger)
+
+**Compatibility:** The installer still uses legacy internal paths named
+`character-lab` so existing user-level payloads are not moved or downloaded
+again. This is an internal directory label, not a separate user-facing
+Studio feature. The .deb ships installer logic, not vendored large assets;
+the initial setup needs connectivity. Online installation, detected sockets,
+MCP registration, live agent operations and quality acceptance are distinct
+checks.
