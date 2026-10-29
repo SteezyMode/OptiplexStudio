@@ -83,11 +83,13 @@ class LocalFirst(unittest.TestCase):
 
     def test_adapter_launches_have_no_shell_or_remote_dependency(self):
         self.create()
-        for tool in ('blender', 'blockbench', 'lmms', 'krita'):
+        folders = {'blender': 'models', 'blockbench': 'models',
+                   'lmms': 'music', 'krita': 'art'}
+        for tool, folder in folders.items():
             with patch('native_tools.discover', return_value='/native/' + tool), patch('native_tools.subprocess.Popen') as spawn:
                 native.launch(self.config, tool, 'game')
                 self.assertEqual(spawn.call_args.args[0], ['/native/' + tool])
-                self.assertEqual(spawn.call_args.kwargs['cwd'], str(self.base / 'game'))
+                self.assertEqual(spawn.call_args.kwargs['cwd'], str(self.base / 'game' / folder))
                 self.assertNotIn('shell', spawn.call_args.kwargs)
         with patch('native_tools.discover', return_value='/native/godot'):
             self.assertEqual(native.command(self.config, 'godot', 'game')[0][1:], ['--editor', '--path', str(self.base / 'game')])
