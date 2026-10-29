@@ -146,6 +146,16 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
         self.godot_capability_note = self.label('Select a Project to see its Godot capability.', 'helper')
         tools.pack_start(self.godot_capability_note, False, False, 0)
         tools.pack_start(self.label('Blender and Blockbench start in models/, LMMS in music/, and Krita in art/ when those folders exist. All tools remain local; configure installations in Settings.', 'helper'), False, False, 0)
+        tools.pack_start(self.label('Alpha tool availability · installation is not proof of a working editor', 'section'), False, False, 0)
+        self.tool_health_labels = {}
+        for tool in ('godot', 'blender', 'lmms', 'codex'):
+            health = self.label(tool.title() + ': Checking…', 'helper')
+            health.set_selectable(True)
+            tools.pack_start(health, False, False, 0)
+            self.tool_health_labels[tool] = health
+        tools.pack_start(self.button('Refresh tool status', lambda _: self.refresh_tool_health()), False, False, 0)
+        self.notebook.connect('switch-page', lambda _, page, index:
+                              self.refresh_tool_health() if index == 2 else None)
         self.transfer_progress = Gtk.ProgressBar(show_text=True)
         self.transfer_progress.set_text('Local project operations')
         body.pack_start(self.transfer_progress, False, False, 0)
@@ -163,30 +173,47 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
             GLib.idle_add(self.tools_setup)
 
     def refresh_tool_health(self):
-        """Update Settings warning only for errors/unfinished Codex setup."""
+        """Display passive tool discovery without overstating launch or AI readiness."""
         import native_tools
+        serial = getattr(self, '_health_serial', 0) + 1
+        self._health_serial = serial
+        config = dict(self.config)
+
         def evaluate():
+            checks = {name: native_tools.inspect(config, name)
+                      for name in native_tools.CORE_ALPHA_TOOLS}
+            auth = None
+            if checks['codex'].get('path'):
+                auth = native_tools.codex_authentication(config)['status']
+            rows = {}
             problems = []
-            for name in ('godot', 'codex'):
-                details = native_tools.inspect(self.config, name)
-                if details['status'] not in ('Ready', 'Components verified', 'Missing'):
-                    problems.append(name + ': ' + details['status'])
-                if name == 'codex' and details['path']:
-                    auth = native_tools.codex_authentication(self.config)
-                    if auth['status'] != 'Signed in':
-                        problems.append('Codex: ' + auth['status'])
-            return problems
-        def complete(problems, error):
-            if not self.window:
+            for name, check in checks.items():
+                summary, attention = native_tools.readiness_summary(name, check, auth)
+                rows[name] = summary
+                if attention:
+                    problems.append(native_tools.LABELS[name] + ': ' + summary)
+            return rows, problems
+
+        def complete(result, error):
+            # Ignore results from old config or requests overtaken by a newer refresh.
+            if not self.window or serial != self._health_serial or config != self.config:
                 return
             if error:
-                self.settings_button.set_label('SETTINGS · ERROR')
-                self.settings_button.set_name('settings-error')
-                self.settings_button.set_tooltip_text(error)
-            else:
-                self.settings_button.set_label('SETTINGS' + (' · ACTION NEEDED' if problems else ''))
-                self.settings_button.set_name('settings-warning' if problems else 'setting')
-                self.settings_button.set_tooltip_text('\n'.join(problems) if problems else 'Tools and configuration')
+                self.settings_button.set_label('SETTINGS · CHECK FAILED')
+                self.settings_button.set_name('settings-warning')
+                self.settings_button.set_tooltip_text('Tool status check failed; reopen Settings.')
+                for name, label in getattr(self, 'tool_health_labels', {}).items():
+                    label.set_text(native_tools.LABELS[name] + ': Check failed · retry in Settings')
+                return
+            rows, problems = result
+            for name, label in getattr(self, 'tool_health_labels', {}).items():
+                label.set_text(native_tools.LABELS[name] + ': ' + rows[name])
+            self.settings_button.set_label('SETTINGS' + (' · ACTION NEEDED' if problems else ''))
+            self.settings_button.set_name('settings-warning' if problems else 'setting')
+            self.settings_button.set_tooltip_text(
+                '\n'.join(problems) if problems else
+                'Core tools detected. Real launches and Codex AI access still require testing.')
+
         self.worker(evaluate, complete)
 
     def build_ai_workspace(self, page, grid):
