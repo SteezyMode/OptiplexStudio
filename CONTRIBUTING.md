@@ -1,46 +1,41 @@
 # Contributing to OptiPlex Studio
 
-## What this application is
+Studio is a local-first GTK3 desktop workspace for creative projects, assets, native tools and project-aware Codex. It does **not** require a separate host, SSH, Wolf, Docker or NOW. Wolf/NOW may independently provide graphical remote access to the workstation; neither is part of Studio's local data backend.
 
-Studio is a native GTK3 creative workspace for projects, assets, documentation, and Codex-assisted game development. Wolf is an optional remote graphical environment, not the Studio application. NOW is a separate launcher. [Current status](docs/CURRENT-STATUS.md) describes the difference between published packages, current source, and independently tested host-side experiments.
-
-The published desktop package is v0.3.0. A successful host-side Godot or Blender experiment is not necessarily part of that release.
+Read [AGENTS.md](AGENTS.md), [current status](docs/CURRENT-STATUS.md) and [the application guide](README-STUDIO.md) before a change. The current **downloadable .deb** is linked from the [repository README](README.md); don't infer the published version from historical guides.
 
 ## Source map
 
-| Path | Purpose |
+| Path | Role |
 | --- | --- |
-| `studio/app.py`, `studio/project_ui.py`, `studio/session_ui.py` | GTK application and screens |
-| `studio/core.py` | Tailscale, SSH, HTTPS service URLs and browser integration |
-| `studio/project_client.py`, `studio/project_helper.py` | Project operations and scoped remote helpers |
-| `studio/desktop_helper.py`, `studio/file_browser.py` | Desktop actions and asset browser |
-| `studio/session_helper.py`, `studio/codex_gate.py` | Codex session behavior |
-| `studio/launcher.c`, `studio/package.py`, `studio/validate_package.py` | Binary launcher, Debian package and verification |
-| `tests/` | Tests including isolated Broadway GTK workflows |
-| `tools/`, `docker/`, `studio/demo_controls/` | Optional host/Wolf tools, not automatically shipped in the GTK package |
-| `docs/`, `catalogs/`, `templates/` | ADRs, experimental references and templates |
+| `studio/app.py`, `project_ui.py`, `tools_ui.py`, `session_ui.py`, `embedded_ui.py` | GTK app, project/navigation and native Codex UI |
+| `studio/project_helper.py`, `project_client.py`, `conversation_store.py` | Local project filesystem and conversation ownership |
+| `studio/native_tools.py`, `portable_install.py`, `codex_install.py` | Native launcher, discovery and consented rootless installation |
+| `studio/codex_rpc.py`, `embedded_codex.py`, `session_helper.py` | Codex protocol, project-scope and session behavior |
+| `studio/launcher.c`, `package.py`, `validate_package.py`, `version.py` | Desktop launcher and single-version Debian packaging |
+| `tests/` and `.github/workflows/` | Unit/GTK fixtures, package smoke, PR CI and release publication |
+| `docs/`, `catalogs/`, `tools/`, `docker/` | Current reference docs plus optional or historical experiments |
 
-## First build
+## Development and verification
 
-Use an amd64 Debian/Ubuntu-compatible development system with dependencies listed in [.github/workflows/ci.yml](.github/workflows/ci.yml). The repository already contains its approved application artwork.
+Use a Debian/Ubuntu-family amd64 environment with prerequisites from [Studio CI](.github/workflows/ci.yml). Do not install over an active workstation merely to run the test suite.
 
 ```sh
 make -f Makefile.studio check
 make -f Makefile.studio package
-/usr/bin/python3 -B tests/run_gtk.py --package dist/optiplex-studio_0.3.0_amd64.deb
+/usr/bin/python3 -B tests/run_gtk.py --package "dist/optiplex-studio_$(/usr/bin/python3 -c 'import runpy; print(runpy.run_path("studio/version.py")["PACKAGE_VERSION"])')_amd64.deb"
 /usr/bin/python3 -B studio/validate_package.py
 ```
 
-Package versions are defined in **studio/version.py**; do not patch multiple scripts or CI filenames to bump a release. A green build validates packaging and fixtures, not live Wolf, Blender, Godot, Codex, networking or persistence. Building does not install or update the running desktop.
+CI additionally installs the built .deb on an isolated GitHub runner and checks the actual GTK window. Only run `tests/smoke_installed_package.sh` on a disposable runner: it uses `sudo apt-get install`.
 
-## Change rules
+A green CI result validates source, fixtures and package wiring. It **does not** prove native Codex sign-in, a working graphics/audio session, real Blender-to-Godot or LMMS-to-Godot output, or compatibility with every workstation.
 
-1. Begin with [the six frozen Studio v1 gates](https://github.com/SteezyMode/OptiplexStudio/issues/3); changes outside them are post-v1 unless explicitly approved.
-2. Identify one reproducible problem and its acceptance test; separate shipped, observed and proposed behavior.
-3. Work in a feature branch. Keep projects, configuration, session history and existing services intact.
-4. Add tests and describe the required live manual checks; avoid equating a headless validation with working GUI behavior.
-5. In PRs explain purpose, risk, tests, compatibility and rollback. Do not make unrelated host changes to fix the app.
+## Change and release policy
 
-[ADR-001 local-first](docs/ADR-001-LOCAL-FIRST-SHARED-STUDIO-RUNTIME.md) and [ADR-002 upstream-first](docs/ADR-002-UPSTREAM-FIRST-INTEGRATED-TOOLCHAIN.md) describe accepted design directions, not fully shipped features. See [release process](docs/RELEASING.md) for version-tagged builds.
+1. Work on one user-visible issue at a time. Include the failure/need, observable success criteria, and a minimal scope. The current priorities are unified-project compatibility/navigation ([#30](https://github.com/SteezyMode/OptiplexStudio/issues/30)) and guided Codex authentication/readiness ([#31](https://github.com/SteezyMode/OptiplexStudio/issues/31)).
+2. Create a feature branch and PR. Add focused regression tests; preserve existing projects, user files, Codex history, approval/sandbox boundaries and unrelated services.
+3. Record test evidence and unperformed physical checks in the PR. Merge only when relevant checks pass. Keep [current status](docs/CURRENT-STATUS.md) factual.
+4. Normal `main` updates validate but do not release. Only a deliberate `studio/version.py` bump (or matching version tag) publishes a new GitHub Release. See [releasing](docs/RELEASING.md). Verify the actual downloadable artifact afterward. Do not overwrite published assets.
 
-No application-code LICENSE is present at the root. An explicit licensing and contribution policy is needed before outside contributors rely on reuse or redistribution rights. A public product name and tested migration path must also be chosen before commercial launch.
+The root currently has **no application-code LICENSE**, so do not assume a permissive redistribution or contributor policy. That must be resolved before inviting external contributions or commercialization.
