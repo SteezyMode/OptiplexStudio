@@ -1,10 +1,13 @@
 name: Publish OptiPlex Studio
 
-# No automatic release or asset overwrite from a development commit.
+# A version bump merged to main publishes the new Current Studio .deb.
+# Manual v* tags remain supported. Non-release main commits do not publish.
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
+    tags: ['v*']
+    paths:
+      - 'studio/version.py'
 
 permissions:
   contents: write
@@ -29,9 +32,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          version="${GITHUB_REF_NAME#v}"
-          test -n "$version"
-          test "$version" != "$GITHUB_REF_NAME"
+          version="$(/usr/bin/python3 -c 'import runpy; print(runpy.run_path("studio/version.py")["PACKAGE_VERSION"])')"
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            test "$GITHUB_REF_NAME" = "v${version}"
+          fi
           /usr/bin/python3 -B -m unittest discover -s tests -v
           xvfb-run -a make -f Makefile.studio package
           package="dist/optiplex-studio_${version}_amd64.deb"
@@ -43,6 +47,7 @@ jobs:
           /usr/bin/python3 -B studio/validate_package.py "$package"
           bash tests/smoke_installed_package.sh
           (cd dist && sha256sum "optiplex-studio_${version}_amd64.deb" > "optiplex-studio_${version}_amd64.deb.sha256")
+          cp "dist/optiplex-studio_${version}_amd64.deb" dist/optiplex-studio_amd64.deb
       - name: Publish new release without replacing previous assets
         env:
           GH_TOKEN: ${{ github.token }}
@@ -50,15 +55,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          version="${GITHUB_REF_NAME#v}"
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            echo "Release $GITHUB_REF_NAME exists; refusing to overwrite published assets" >&2
+          version="$(/usr/bin/python3 -c 'import runpy; print(runpy.run_path("studio/version.py")["PACKAGE_VERSION"])')"
+          tag="v${version}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag exists; refusing to overwrite published assets" >&2
             exit 1
           fi
-          gh release create "$GITHUB_REF_NAME" \
+          gh release create "$tag" \
             "dist/optiplex-studio_${version}_amd64.deb" \
             "dist/optiplex-studio_${version}_amd64.deb.sha256" \
+            "dist/optiplex-studio_amd64.deb" \
             --target "$GITHUB_SHA" \
-            --title "OptiPlex Studio ${GITHUB_REF_NAME}" \
+            --title "OptiPlex Studio $tag" \
             --generate-notes \
             --latest
