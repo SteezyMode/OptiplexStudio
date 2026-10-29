@@ -1,6 +1,6 @@
 # Studio — current implementation and verification
 
-Updated: **2026-10-29**. This describes the latest Studio source (package version **0.4.18**); verify the **actually published Current .deb** using the repository's latest GitHub Release rather than assuming a source version is a published artifact. Historical remote-service experiments are not part of the supported product.
+Updated: **2026-10-29**. This describes the latest Studio source (package version **0.4.19**); verify the **actually published Current .deb** using the repository's latest GitHub Release rather than assuming a source version is a published artifact. Historical remote-service experiments are not part of the supported product.
 
 Alpha 1 acceptance gates are tracked in [the Alpha 1 roadmap](ALPHA-1-ROADMAP.md), a subset of the frozen [v1 six-milestone plan](https://github.com/SteezyMode/OptiplexStudio/issues/3); **none are signed off solely by CI**.
 
@@ -16,9 +16,11 @@ Alpha 1 acceptance gates are tracked in [the Alpha 1 roadmap](ALPHA-1-ROADMAP.md
 
 Studio's ordinary project operations require no SSH, Tailscale, Wolf, NOW, Docker or hosted browser backend. Wolf can independently display a workstation session but is not a required Studio service.
 
-- **Optional only:** v0.4.18 replaces the source-only Character Lab preparation with a consented on-device installer: MPFB and its Bridge are installed/enabled via Blender's extension CLI, visual MCP is installed privately with its add-on, Rigger is installed disabled, and two new localhost MCP entries are registered in the existing Codex profile without overwriting an existing registration. The new AI Workspace **Character Study** preset guides an inspect/refine/export task. **Real character generation, MPFB asset-pack import, embedded MCP reachability and rendered quality are unverified**; see [Character Lab](CHARACTER-LAB.md). No Alpha 1 gates have changed.
+- **One AI creation flow (v0.4.19):** all new project-scoped embedded Codex conversations now receive universal task-based guidance: Blender MCP for props, flora, weapons, architecture, humans and materials; MPFB for human-specific anatomy; Godot for scenes/gameplay; LMMS for audio; dormant Rigger only on request. The previous Character Study preset is removed. **Settings → Install AI creative tools** is the shared integration entry, not a separate Character Lab product. Existing project documents, sandbox and on-request approvals remain unchanged. Download/install and live MCP readiness are distinct: the real Blender socket, MPFB asset pack and completed Codex tool calls are still physically unverified. See the [AI creative integration guide](CHARACTER-LAB.md). The five Alpha 1 gates remain unchanged.
 
 ## Verification evidence
+
+- v0.4.19 adds regression checks for generic developer instructions even in a new project without AI_MEMORY, preserved user memory, no character-specific UI entry, and unchanged Codex sandbox/approval policy. This does not demonstrate artistic output or functioning agent MCP calls on a Linux desktop.
 
 - v0.4.18 adds unit/GTK tests for installer consent, installed package presence, bundled modules, Blender extension activation, dormant Rigger, pinned visual MCP, localhost/no-clobber Codex registration and the offline socket doctor. This is CI evidence only; physical Blender 5.2 and Codex MCP proof remain open.
 
@@ -40,6 +42,6 @@ Studio's ordinary project operations require no SSH, Tailscale, Wolf, NOW, Docke
 2. [#30 — Unified project UI and capabilities](https://github.com/SteezyMode/OptiplexStudio/issues/30): discovery and Godot capability controls are implemented; complete per-tool health/readiness and real editor roundtrip still need end-to-end acceptance.
 3. [#27 — Core-four creative workflow](https://github.com/SteezyMode/OptiplexStudio/issues/27): fresh compatible machine, Godot+Blender+LMMS+Codex native workflow, editable source-to-export roundtrip and actual playback. Recovery and off-host restore also remain unaccepted.
 
-**Next engineering action:** use the Current v0.4.18 .deb to physically exercise the [Alpha A1–A3 clean-install and core-four flow](ALPHA-1-ROADMAP.md). Fix only reproducible failures found on-device, then complete A4 real Godot media playback and A5 off-host recovery. Keep #27, #30, #31 open until accepted.
+**Next engineering action:** use the Current v0.4.19 .deb to physically exercise the [Alpha A1–A3 clean-install and core-four flow](ALPHA-1-ROADMAP.md). Fix only reproducible failures found on-device, then complete A4 real Godot media playback and A5 off-host recovery. Keep #27, #30, #31 open until accepted.
 
 For current instructions use [AGENTS.md](../AGENTS.md), [CONTRIBUTING.md](../CONTRIBUTING.md) and [RELEASING.md](RELEASING.md). Historical v0.3.0 remote/container guides do not define Studio's supported local-first workflow.
