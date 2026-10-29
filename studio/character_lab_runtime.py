@@ -1,8 +1,8 @@
-"""Install experimental Blender character tools and register local Codex MCP servers.
+"""Install shared Blender creative tools and register local Codex MCP servers.
 
-Only invoked by explicit user's character-lab installation, never at Studio launch.
+Only invoked by explicit user's creative-tool installation, never at Studio launch.
 Does not install system packages, disable sandboxing, or alter existing MCP entries.
-This is an opt-in executable integration trial, not alpha acceptance evidence.
+This is an opt-in general-purpose Blender MCP integration trial, not alpha acceptance evidence.
 """
 import os
 from pathlib import Path
