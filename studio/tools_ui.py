@@ -340,7 +340,7 @@ class ToolsUI:
         experimental.pack_start(self.label('Character Lab · experimental, optional for Alpha 1',
                                            'helper'), True, True, 0)
         experimental.pack_start(
-            self.button('Prepare Character Lab…', self.prepare_character_lab), False, False, 0)
+            self.button('Prepare Character Lab…', lambda _: ToolsUI.prepare_character_lab(self)), False, False, 0)
         experimental.pack_start(
             self.button('Install steps', lambda _: Gtk.show_uri_on_window(
                 dialog,
