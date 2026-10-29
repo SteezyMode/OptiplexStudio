@@ -31,22 +31,28 @@ class ToolsUI:
         return False
 
     def prepare_character_lab(self, _=None):
-        """One deliberate local preparation request; never run on app launch."""
+        """Direct installation after user consent; not a normal app startup task."""
         from pathlib import Path
         import sys
         import core
+        try:
+            blender = native_tools.discover(self.config, 'blender')
+            codex = native_tools.discover(self.config, 'codex')
+        except (OSError, ValueError, RuntimeError) as exc:
+            self.notice('Install Blender and Codex first', str(exc))
+            return
         prompt = Gtk.MessageDialog(
             transient_for=self.window, modal=True, message_type=Gtk.MessageType.QUESTION,
             buttons=Gtk.ButtonsType.YES_NO,
-            text='Prepare experimental character tools?')
+            text='Install the Blender Character Lab?')
         prompt.format_secondary_text(
-            'Download PINNED MPFB MCP and Rigger source into your own '
-            '~/.local/share/optiplex-studio/character-lab directory, install MPFB MCP '
-            'dependencies into a private Python venv and build a dormant Rigger ZIP. '
-            'This executes upstream packaging code and requires internet and Git. '
-            'It does NOT install or enable Blender add-ons, install MPFB system assets, '
-            'modify Codex settings, or touch Studio projects. '
-            'A separate terminal asks for YES before starting.')
+            'Install and enable MPFB and its Bridge into your existing Blender profile; '
+            'install Blender visual MCP and register two local MCP servers in your '
+            'existing Codex configuration. This downloads third-party packages '
+            'and executes their installers. Rigger is installed but not enabled. '
+            'Existing MCP registrations are preserved, and Studio project files '
+            'are untouched. MPFB system assets and a live Blender/AI test remain '
+            'necessary afterward.')
         approved = prompt.run() == Gtk.ResponseType.YES
         prompt.destroy()
         if not approved:
@@ -54,15 +60,17 @@ class ToolsUI:
         script = Path(__file__).with_name('character_lab_setup.py')
         try:
             if not script.is_file():
-                raise FileNotFoundError('Character Lab setup helper is missing from this Studio build.')
-            argv = core.terminal_args([sys.executable, '-B', str(script), 'prepare'])
+                raise FileNotFoundError('Character Lab helper is missing from this Studio build.')
+            argv = core.terminal_args([
+                sys.executable, '-B', str(script), 'install', '--yes',
+                '--blender', blender, '--codex', codex])
             subprocess.Popen(argv, stdin=subprocess.DEVNULL, start_new_session=True)
         except (OSError, RuntimeError) as exc:
-            self.notice('Character Lab preparation could not start', str(exc))
+            self.notice('Character Lab installation could not start', str(exc))
             return
         if hasattr(self, 'status'):
-            self.status.set_text('Character Lab source preparation opened in a separate terminal. '
-                                 'Complete Blender add-on installation using the guide.')
+            self.status.set_text('Character Lab installer launched. Reopen Blender and Codex after '
+                                 'installation, then run the Character Lab live tests.')
 
     def save_config(self, candidate):
         # Preserve unknown settings and use the same atomic persistence as Settings.
@@ -340,7 +348,7 @@ class ToolsUI:
         experimental.pack_start(self.label('Character Lab · experimental, optional for Alpha 1',
                                            'helper'), True, True, 0)
         experimental.pack_start(
-            self.button('Prepare Character Lab…', lambda _: ToolsUI.prepare_character_lab(self)), False, False, 0)
+            self.button('Install Character Lab…', lambda _: ToolsUI.prepare_character_lab(self)), False, False, 0)
         experimental.pack_start(
             self.button('Install steps', lambda _: Gtk.show_uri_on_window(
                 dialog,

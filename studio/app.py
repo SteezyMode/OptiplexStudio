@@ -247,6 +247,14 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
         grid(self.ai_controls, [
             (name, lambda _, n=name: self.open_embedded(prompt=core.CODEX_TASKS[n]),
              'project' if name == 'Review Changes' else 'godot') for name in presets], columns=3, button_name='setting')
+        grid(self.ai_controls, [
+            ('Character Study · MPFB + Blender', lambda _: self.open_embedded(
+                prompt=core.CHARACTER_STUDY_PROMPT), 'project')
+        ], columns=1, button_name='setting')
+        self.ai_controls.pack_start(
+            self.label('Character Study uses installed Blender MCP tools and waits for your '
+                       'prompt submission. It never activates Rigger or changes previous models.',
+                       'helper'), False, False, 0)
         self.ai_advanced = Gtk.Expander(label='More actions')
         self.ai_advanced.set_name('ai-advanced')
         advanced = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)

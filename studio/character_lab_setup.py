@@ -117,17 +117,36 @@ def describe(home=None):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('status', 'prepare'))
+    parser.add_argument('action', choices=('status', 'prepare', 'install', 'doctor'))
+    parser.add_argument('--blender', help='Absolute Blender executable used by Studio')
+    parser.add_argument('--codex', help='Absolute Codex executable used by Studio')
+    parser.add_argument('--yes', action='store_true',
+                        help='For explicit Studio GUI consent; CLI install normally asks YES')
     args = parser.parse_args(argv)
     if args.action == 'status':
         print(json.dumps(describe(), indent=2))
         return 0
-    print('Experimental packages will be fetched and a private Python environment created.', flush=True)
-    print('Existing Blender settings and creative project files are not edited.', flush=True)
-    if input('Prepare MPFB MCP and Rigger sources? Type YES to confirm: ').strip() != 'YES':
+    if args.action == 'doctor':
+        from character_lab_runtime import service_status
+        print(json.dumps(service_status(), indent=2))
+        return 0
+    if args.action == 'install' and (not args.blender or not args.codex):
+        parser.error('install requires --blender and --codex, from Studio Settings')
+    print('Experimental third-party downloads and installation will execute code.', flush=True)
+    if args.action == 'install':
+        print('MPFB and the Bridge will be enabled in Blender; Rigger will stay disabled.', flush=True)
+        print('Visual Blender MCP will be installed and user Codex MCP settings amended.', flush=True)
+        print('Current project files will not be edited. Restart Blender and Codex afterward.', flush=True)
+    else:
+        print('Prepare MPFB MCP and Rigger sources in a private directory.', flush=True)
+    if not args.yes and input('Install/prepare character tools? Type YES to confirm: ').strip() != 'YES':
         print('Cancelled. No downloads started.')
         return 1
-    prepare()
+    if args.action == 'install':
+        from character_lab_runtime import install
+        install(args.blender, args.codex)
+    else:
+        prepare()
     return 0
 
 

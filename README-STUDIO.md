@@ -98,7 +98,7 @@ tool setup. Shell profiles and saved Codex settings are unchanged.
 
 See [installation behavior, publisher trust, first-run steps and deferred work](docs/NATIVE-TOOL-INSTALLATION.md).
 
-Experimental character tools are opt-in only. In Settings choose **Prepare Character Lab…** to stage pinned MPFB MCP and Rigger source without enabling them. MPFB itself, the separate MPFB Bridge extension, and MCP for Blender require the documented local Blender/Codex activation steps. Rigger can be installed but left disabled. This is not part of the core-four Alpha 1 gate; see [Character Lab setup and safety](docs/CHARACTER-LAB.md).
+Experimental character tools are opt-in. In Settings, **Install Character Lab…** installs and enables MPFB and its Bridge in the configured Blender, installs visual MCP in a private Python environment, registers two localhost MCP servers with the selected Codex CLI, and installs Rigger **disabled**. MPFB's system assets and real Blender/Codex connectivity still require first-run verification. In **AI Workspace → Character Study · MPFB + Blender**, Codex gets an explicit project-scoped model/inspect/refine/export workflow. This experimental path is outside the frozen Alpha 1 gates; see [Character Lab setup and safety](docs/CHARACTER-LAB.md).
 
 VSCodium is an optional editor. Open Current Project passes the validated selected
 Project directory to the native editor. Future Codex change-review integration

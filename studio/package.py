@@ -39,7 +39,7 @@ if not launcher.is_file():
 for folder in ['DEBIAN', 'usr/bin', 'usr/lib/optiplex-studio', 'usr/share/applications', 'usr/share/pixmaps', 'usr/share/doc/optiplex-studio']:
     (pkg / folder).mkdir(parents=True, exist_ok=True)
 shutil.copy2(root / 'build/local-first/optiplex-studio', pkg / 'usr/bin/optiplex-studio')
-for filename in ['app.py', 'core.py', 'project_helper.py', 'project_client.py', 'project_ui.py', 'session_helper.py', 'session_ui.py', 'native_tools.py', 'portable_install.py', 'tool_environment.py', 'codex_install.py', 'tools_ui.py', 'conversation_store.py', 'codex_rpc.py', 'embedded_codex.py', 'embedded_ui.py', 'transcript.py', 'character_lab_setup.py', 'style.css']:
+for filename in ['app.py', 'core.py', 'project_helper.py', 'project_client.py', 'project_ui.py', 'session_helper.py', 'session_ui.py', 'native_tools.py', 'portable_install.py', 'tool_environment.py', 'codex_install.py', 'tools_ui.py', 'conversation_store.py', 'codex_rpc.py', 'embedded_codex.py', 'embedded_ui.py', 'transcript.py', 'character_lab_setup.py', 'character_lab_runtime.py', 'style.css']:
     shutil.copy2(root / 'studio' / filename, pkg / 'usr/lib/optiplex-studio' / filename)
 for path, destination in icons:
     (pkg / destination).mkdir(parents=True, exist_ok=True)
