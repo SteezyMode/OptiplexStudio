@@ -7,15 +7,19 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 
 
 class ReleaseSafetyTests(unittest.TestCase):
-    def test_only_version_tags_can_publish(self):
+    def test_only_versioned_main_or_matching_tags_can_publish(self):
         release = (WORKFLOWS / "release.yml").read_text()
-        self.assertIn("tags:", release)
-        self.assertIn("- 'v*'", release)
+        self.assertIn("branches: [main]", release)
+        self.assertIn("tags: ['v*']", release)
+        self.assertIn("paths:\n      - 'studio/version.py'", release)
         self.assertNotIn("workflow_dispatch:", release)
         self.assertNotIn("--clobber", release)
-        self.assertIn("GITHUB_REF_NAME", release)
+        self.assertIn("GITHUB_REF_TYPE", release)
+        self.assertIn('test "$GITHUB_REF_NAME" = "v${version}"', release)
         self.assertIn('dpkg-deb -f "$package" Version', release)
-        self.assertIn('gh release view "$GITHUB_REF_NAME"', release)
+        self.assertIn('gh release view "$tag"', release)
+        self.assertIn('gh release create "$tag"', release)
+        self.assertIn("optiplex-studio_amd64.deb", release)
 
     def test_other_workflows_cannot_publish(self):
         for path in list(WORKFLOWS.glob("*.yml")) + list(WORKFLOWS.glob("*.yaml")):

@@ -1,5 +1,14 @@
 # OptiPlex Studio
 
+*Development name — not affiliated with Dell.*
+
+## Download Studio — Current Linux build
+
+**[Download the current Studio .deb](https://github.com/SteezyMode/OptiplexStudio/releases/latest/download/optiplex-studio_amd64.deb)**
+
+Install on a compatible 64-bit Ubuntu, Linux Mint or Pop!_OS workstation with your package installer. The GitHub [latest release](https://github.com/SteezyMode/OptiplexStudio/releases/latest) also contains the versioned .deb and SHA-256 checksum. Studio works locally; no NOW client, Wolf or server configuration is required.
+
+
 OptiPlex Studio is a local-first Linux creative workspace for Godot, Blender,
 Blockbench, LMMS, project management and project-aware Codex development. Krita
 and VSCodium can be configured as optional native tools. Wolf may be used as an optional graphical access method; it is not a Studio backend.

@@ -25,6 +25,8 @@ CATEGORIES = {'Sprites': 'assets/sprites', 'Textures': 'assets/textures',
               '3D Models': 'assets/3d', 'Music': 'assets/audio/music',
               'Sound Effects': 'assets/audio/sfx', 'Other Assets': 'assets/other'}
 PROJECT_TYPES = ('Studio',)  # One workspace; applications are capabilities, not project types.
+# Historical manifests remain readable; new projects always use the unified format.
+LEGACY_PROJECT_TYPES = ('Blank', 'Godot', 'Music/Audio', 'Animation', '3D')
 DOCS = ('GAME.md', 'PROGRESS.md', 'DECISIONS.md', 'AGENTS.md', 'AI_MEMORY.md')
 WORKFLOW = ('Before significant implementation, read GAME.md, PROGRESS.md, DECISIONS.md and AGENTS.md '
             'in the project root. Keep PROGRESS.md and DECISIONS.md concise and accurate after meaningful changes. '
@@ -128,10 +130,22 @@ class Project:
                 os.close(directory)
 
     def project_type(self):
-        metadata = json.loads(self.read('studio-project.json', MAX_TEXT))
-        if metadata.get('type') != 'Studio':
+        # Discovery is read-only. The original Godot projects did not require
+        # a Studio manifest; the historical v1 manifests used several types.
+        try:
+            metadata = json.loads(self.read('studio-project.json', MAX_TEXT))
+        except FileNotFoundError:
+            try:
+                self.read('project.godot', MAX_TEXT)
+            except FileNotFoundError as exc:
+                raise ValueError('No supported Studio project manifest or Godot file.') from exc
+            return 'Studio'
+        if not isinstance(metadata, dict):
             raise ValueError('Unsupported Studio project manifest.')
-        return 'Studio'
+        version, kind = metadata.get('version'), metadata.get('type')
+        if (version == 2 and kind == 'Studio') or (version == 1 and kind in LEGACY_PROJECT_TYPES):
+            return 'Studio'
+        raise ValueError('Unsupported Studio project manifest.')
 
     def close(self):
         os.close(self.fd)
