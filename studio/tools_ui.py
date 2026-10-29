@@ -30,6 +30,40 @@ class ToolsUI:
         self.open_embedded(prompt=CODEX_LIVE_CHECK)
         return False
 
+    def prepare_character_lab(self, _=None):
+        """One deliberate local preparation request; never run on app launch."""
+        from pathlib import Path
+        import sys
+        import core
+        prompt = Gtk.MessageDialog(
+            transient_for=self.window, modal=True, message_type=Gtk.MessageType.QUESTION,
+            buttons=Gtk.ButtonsType.YES_NO,
+            text='Prepare experimental character tools?')
+        prompt.format_secondary_text(
+            'Download PINNED MPFB MCP and Rigger source into your own '
+            '~/.local/share/optiplex-studio/character-lab directory, install MPFB MCP '
+            'dependencies into a private Python venv and build a dormant Rigger ZIP. '
+            'This executes upstream packaging code and requires internet and Git. '
+            'It does NOT install or enable Blender add-ons, install MPFB system assets, '
+            'modify Codex settings, or touch Studio projects. '
+            'A separate terminal asks for YES before starting.')
+        approved = prompt.run() == Gtk.ResponseType.YES
+        prompt.destroy()
+        if not approved:
+            return
+        script = Path(__file__).with_name('character_lab_setup.py')
+        try:
+            if not script.is_file():
+                raise FileNotFoundError('Character Lab setup helper is missing from this Studio build.')
+            argv = core.terminal_args([sys.executable, '-B', str(script), 'prepare'])
+            subprocess.Popen(argv, stdin=subprocess.DEVNULL, start_new_session=True)
+        except (OSError, RuntimeError) as exc:
+            self.notice('Character Lab preparation could not start', str(exc))
+            return
+        if hasattr(self, 'status'):
+            self.status.set_text('Character Lab source preparation opened in a separate terminal. '
+                                 'Complete Blender add-on installation using the guide.')
+
     def save_config(self, candidate):
         # Preserve unknown settings and use the same atomic persistence as Settings.
         from app import CONFIG
@@ -302,6 +336,17 @@ class ToolsUI:
         mutable_controls.append(runtime_button)
         connection_row.pack_start(runtime_button, False, False, 0)
         box.pack_start(connection_row, False, False, 0)
+        experimental = Gtk.Box(spacing=6)
+        experimental.pack_start(self.label('Character Lab · experimental, optional for Alpha 1',
+                                           'helper'), True, True, 0)
+        experimental.pack_start(
+            self.button('Prepare Character Lab…', self.prepare_character_lab), False, False, 0)
+        experimental.pack_start(
+            self.button('Install steps', lambda _: Gtk.show_uri_on_window(
+                dialog,
+                'https://github.com/SteezyMode/OptiplexStudio/blob/main/docs/CHARACTER-LAB.md',
+                0)), False, False, 0)
+        box.pack_start(experimental, False, False, 0)
         def request_live_test(_):
             if state['busy']:
                 return
