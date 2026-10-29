@@ -30,12 +30,18 @@ valid `studio-project.json` metadata. Invalid names and symlinks are excluded.
 
 ## Projects, assets and documents
 
-New projects support Blank, Godot, Music/Audio, Animation and 3D templates.
-Each includes categorized asset folders and GAME.md, PROGRESS.md, DECISIONS.md
-AGENTS.md and AI_MEMORY.md. Godot includes a minimal scene and native project file. Git is
-initialized without a commit when available; if Git is missing, Studio reports a
-warning and the project remains usable. Existing project files are never replaced
-by template creation or missing-document initialization.
+New projects use one unified **Studio** format, with categorized asset folders,
+GAME.md, PROGRESS.md, DECISIONS.md, AGENTS.md and AI_MEMORY.md. A new
+project also includes a minimal Godot starter scene and native project file.
+Older Blank, Godot, Music/Audio, Animation and 3D manifest projects and
+manifestless Godot projects remain usable without migration. For an older
+workspace without Godot files, choose **Add Godot to this Project** in Creative
+Tools: it creates only missing project.godot and starter-scene files, never
+overwrites an existing scene or changes a legacy manifest. This does not install
+the Godot executable. Git initializes without a commit for new projects when
+available; if Git is missing, Studio reports a warning and the project remains
+usable. Existing project files are never replaced by template creation or
+missing-document initialization.
 
 Project Files and Browse Assets open local folders through the file manager or
 the GTK fallback browser. Import Assets retains conflict review, size limits,
@@ -46,13 +52,17 @@ snapshots to ChatGPT manually; nothing is uploaded automatically.
 
 ## Native creative tools
 
-Godot opens the selected Godot project with `--editor --path PROJECT_DIRECTORY`.
-Blender, Blockbench, LMMS and Krita launch with the selected project as their
-working directory. Studio does not guess which source asset to open or overwrite
-an existing application session. Native launches may open another application
-window; window focusing is left to the desktop environment.
+Godot actions are disabled until the selected project has Godot project files;
+then the editor opens with `--editor --path PROJECT_DIRECTORY`. The Add Godot
+button is available only for projects without that scaffold. Blender and Blockbench
+launch in the project's existing `models/` folder, LMMS in `music/`, and Krita
+in `art/`; if the folder is absent or a symlink, they use the validated
+project root. Studio never guesses a native document filename or creates these
+folders merely to launch an editor. Missing executables are configured in
+Settings. Native launches may open separate windows, with focus handled by the
+desktop environment.
 
-Tools & Setup opens on first use and can be reopened from its tab or Settings.
+Tool setup opens on first use and can be reopened from top-right Settings.
 Review detected tools, use Choose Executable, or use Auto to clear an override.
 Install missing tools with per-download consent; Recheck updates status. Repair is
 available for incomplete Studio-managed optional packages and supported Codex components.
