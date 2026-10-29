@@ -82,6 +82,8 @@ class ToolsUI:
 
         def set_busy(value):
             state['busy'] = value
+            if not value:
+                state.pop('installing', None)
             for control in mutable_controls:
                 control.set_sensitive(not value)
             for name, control in install_buttons.items():
@@ -159,6 +161,7 @@ class ToolsUI:
                         prompt.destroy()
                         if approved:
                             connect_codex()
+                state['installing'] = name
                 background(lambda: native_tools.install(self.config, plan, consent=True,
                            progress=update_progress, cancel=cancel), installed)
             background(lambda: native_tools.prepare_install(self.config, name, cancel), prepared)
@@ -179,23 +182,24 @@ class ToolsUI:
                     install_buttons[name].set_sensitive((state['busy'] and name == state.get('installing')) or (not state['busy'] and (result['status'] == 'Missing' or result.get('repairable', False))))
                     if state['busy'] and name == state.get('installing'):
                         install_buttons[name].set_label('Cancel')
-                        continue
                 status = result['status']
-                if status == 'Ready' and name != 'codex':
-                    marker, color, summary = '●', '#34a853', 'READY'
+                if state['busy'] and name == state.get('installing'):
+                    marker, color, summary = '●', '#e5a53d', 'INSTALLING · CHECK PROGRESS BELOW'
+                elif status == 'Ready':
+                    # discover/inspect is passive; never claim app readiness here.
+                    marker, color, summary = '●', '#e5a53d', 'DETECTED · LAUNCH NOT VERIFIED'
                 elif name == 'codex' and status == 'Components verified':
-                    marker, color, summary = '●', '#e5a53d', 'RUNTIME VERIFIED · AUTH SEPARATE'
+                    marker, color, summary = '●', '#e5a53d', 'COMPONENTS VERIFIED · AI UNVERIFIED'
                 elif status == 'Missing':
-                    marker, color, summary = '○', '#999999', 'NOT INSTALLED · OPTIONAL'
+                    marker, color, summary = '○', '#999999', 'NOT INSTALLED · CONFIGURE IF NEEDED'
                 elif status in ('Error', 'Broken'):
                     marker, color, summary = '●', '#e04b4b', 'ERROR · REPAIR NEEDED'
                 else:
-                    marker, color, summary = '●', '#e5a53d', 'ACTION NEEDED'
+                    marker, color, summary = '●', '#e5a53d', 'NEEDS ATTENTION'
                 label.set_markup('<span foreground="' + color + '"><b>' + marker + ' ' + summary + '</b></span>' +
                                  '  ' + GLib.markup_escape_text(status) +
                                  (' · ' + GLib.markup_escape_text(result['path']) if result['path'] else '') +
                                  '\n' + GLib.markup_escape_text(result['detail']))
-            codex = native_tools.inspect(self.config, 'codex')
 
         def verify_auth(_=None):
             def done(result, error):
@@ -348,6 +352,8 @@ class ToolsUI:
             self.save_config(dict(self.config, native_setup_seen=True))
         except OSError as exc:
             self.status.set_text('Setup preferences could not be saved: ' + str(exc))
+        if hasattr(self, 'refresh_tool_health'):
+            self.refresh_tool_health()
         if state.get('test_project'):
             GLib.idle_add(self.launch_codex_check, state['test_project'])
         return False

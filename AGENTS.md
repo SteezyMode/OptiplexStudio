@@ -5,6 +5,7 @@ OptiPlex Studio is a **local-first Linux creative workspace** under an internal 
 ## Read before editing
 
 1. `docs/CURRENT-STATUS.md`: shipped source, CI evidence and unverified real-device behavior.
+   `docs/ALPHA-1-ROADMAP.md`: Alpha 1 exit gates (subset of frozen issue #3).
 2. `README-STUDIO.md`: current local project, tools and Codex workflows.
 3. The issue defining the work; currently [#30](https://github.com/SteezyMode/OptiplexStudio/issues/30) for unified project/navigation and [#31](https://github.com/SteezyMode/OptiplexStudio/issues/31) for Codex authentication/readiness.
 4. Relevant source, tests and `docs/RELEASING.md` if packaging changes.

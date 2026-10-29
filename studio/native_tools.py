@@ -111,6 +111,40 @@ def inspect(config, application):
                 'path': '', 'detail': str(exc)}
 
 
+
+CORE_ALPHA_TOOLS = ('godot', 'blender', 'lmms', 'codex')
+
+
+def readiness_summary(application, result, authentication=None):
+    """Present truthful user-facing health without running arbitrary executables.
+
+    Passive discovery is never proof that a GUI editor can run or that a Codex
+    account can complete a model request. Return (summary, needs_attention).
+    """
+    status = result['status']
+    if status == 'Missing':
+        return ('Missing · install or select in Settings', application in CORE_ALPHA_TOOLS)
+    if status == 'Repair needed':
+        return ('Repair needed · repair in Settings', True)
+    if status in ('Error', 'Broken'):
+        return ('Error · check installation in Settings', True)
+    if status == 'Needs attention':
+        return ('Needs attention · check executable in Settings', True)
+    if application == 'codex':
+        if status == 'Components verified':
+            if authentication == 'Signed in':
+                return ('CLI signed in · live AI not verified', False)
+            if authentication == 'Setup required':
+                return ('Installed · connect Codex in Settings', True)
+            if authentication == 'Error':
+                return ('Sign-in check failed · retry in Settings', True)
+            return ('Runtime components verified · sign-in not confirmed', True)
+        return ('Executable detected · Codex runtime not verified', True)
+    if status == 'Ready':
+        return ('Executable detected · launch not verified', False)
+    return ('Needs attention · inspect in Settings', True)
+
+
 def codex_authentication(config):
     """Read-only CLI credential check; this is not proof of live model access.
 
