@@ -133,7 +133,7 @@ class ToolsUI:
                     if name == 'codex' and not failure:
                         verify_auth()
                         prompt = Gtk.MessageDialog(transient_for=dialog, modal=True, message_type=Gtk.MessageType.QUESTION, buttons=Gtk.ButtonsType.YES_NO, text='Codex installed. Connect your ChatGPT account now?')
-                        prompt.format_secondary_text('Studio will open the official Codex device authorization flow. Your account credentials remain with Codex.')
+                        prompt.format_secondary_text('Studio will open official Codex sign-in in a terminal; device-code sign-in is also available. Studio never reads your credentials.')
                         approved = prompt.run() == Gtk.ResponseType.YES
                         prompt.destroy()
                         if approved:
