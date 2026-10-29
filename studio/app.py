@@ -140,7 +140,12 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
             (('LMMS' if name == 'lmms' else name.title()), lambda _, n=name: self.open_desktop_application(n), None)
             for name in ('blender', 'blockbench', 'lmms', 'krita')])
         grid(tools, [('VSCodium · Open Current Project', lambda _: self.open_desktop_application('vscodium'), 'project')])
-        tools.pack_start(self.label('Native tools open locally. Configure executable paths in Settings; no server is required.', 'helper'), False, False, 0)
+        self.add_godot_button = self.button('Add Godot to this Project…', self.add_godot)
+        self.add_godot_button.set_sensitive(False)
+        tools.pack_start(self.add_godot_button, False, False, 0)
+        self.godot_capability_note = self.label('Select a Project to see its Godot capability.', 'helper')
+        tools.pack_start(self.godot_capability_note, False, False, 0)
+        tools.pack_start(self.label('Blender and Blockbench start in models/, LMMS in music/, and Krita in art/ when those folders exist. All tools remain local; configure installations in Settings.', 'helper'), False, False, 0)
         self.transfer_progress = Gtk.ProgressBar(show_text=True)
         self.transfer_progress.set_text('Local project operations')
         body.pack_start(self.transfer_progress, False, False, 0)
@@ -312,8 +317,18 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
         for b in self.project_buttons + getattr(self, 'tray_project_items', []):
             b.set_sensitive(selected and not self.busy)
         p = next((p for p in self.rows if p['name'] == name), {})
+        has_godot = p.get('has_godot', True) if selected else False
         for button in getattr(self, 'godot_buttons', []):
-            button.set_sensitive(selected and not self.busy)
+            button.set_sensitive(selected and not self.busy and has_godot)
+            button.set_tooltip_text('Godot project ready; executable configured in Settings.'
+                                    if has_godot else 'This Project needs Add Godot in Creative Tools.')
+        if hasattr(self, 'add_godot_button'):
+            self.add_godot_button.set_sensitive(selected and not self.busy and not has_godot)
+            self.godot_capability_note.set_text(
+                'Godot project files detected. Launch the editor if Godot is installed in Settings.'
+                if selected and has_godot else
+                'No Godot project files. Add Godot without moving or overwriting existing work.'
+                if selected else 'Select a Project to see its Godot capability.')
         self.create_button.set_sensitive(not self.busy)
         if hasattr(self.combo, 'set_sensitive'):
             self.combo.set_sensitive(not self.busy)
@@ -409,6 +424,28 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
             from native_tools import run_action
             return run_action(config, action, name, **callbacks)
         self.worker(task, done)
+
+    def add_godot(self, _=None):
+        context = self.selected_context()
+        if not context or self.busy:
+            return
+        config, name = context
+        row = next((p for p in self.rows if p['name'] == name), {})
+        if row.get('has_godot', True):
+            self.status.set_text('This Project already has Godot files; nothing changed.')
+            return
+        if not self.confirm('Add Godot to ' + name + '?',
+                            'Create project.godot and a starter scene only where missing. '
+                            'Existing documents, art, music, scenes and the legacy manifest stay untouched. '
+                            'This does not install Godot or change other projects.'):
+            return
+        def done(result):
+            self.status.set_text('Godot capability ready for ' + name +
+                                 (' (created: ' + ', '.join(result['created']) + ').' if result['created'] else '.'))
+            self.last_project = name
+            self.refresh()
+        self.project_task(lambda progress: project_client.request(config, name, 'ensure_godot'),
+                          done, 'Adding Godot to ' + name + '…')
 
     def create_project(self, _):
         dialog = Gtk.Dialog(title='New project', transient_for=self.window, modal=True)
