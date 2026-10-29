@@ -82,6 +82,8 @@ class ToolsUI:
 
         def set_busy(value):
             state['busy'] = value
+            if not value:
+                state.pop('installing', None)
             for control in mutable_controls:
                 control.set_sensitive(not value)
             for name, control in install_buttons.items():
@@ -159,6 +161,7 @@ class ToolsUI:
                         prompt.destroy()
                         if approved:
                             connect_codex()
+                state['installing'] = name
                 background(lambda: native_tools.install(self.config, plan, consent=True,
                            progress=update_progress, cancel=cancel), installed)
             background(lambda: native_tools.prepare_install(self.config, name, cancel), prepared)
