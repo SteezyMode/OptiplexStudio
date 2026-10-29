@@ -48,7 +48,7 @@ Prefer supported native applications and formats over new integration infrastruc
   archive stored on its source machine is insufficient.
   References: [#6](https://github.com/SteezyMode/OptiplexStudio/issues/6), [#27](https://github.com/SteezyMode/OptiplexStudio/issues/27).
 
-## Completion standard
+## Optional artwork experiment, not an extra alpha gate\n\n[Character Lab](CHARACTER-LAB.md) stages MPFB MCP and Rigger for a separate Patient V4 art-direction experiment. The visual Blender MCP and MPFB extension require explicit local setup. None of this changes A1–A5 or the frozen v1 contract; do not mark alpha gates complete from tool installation alone.\n\n## Completion standard
 
 Each gate requires a dated evidence note (OS, package version, Git commit, machine,
 test steps, actual results and any failure/recovery). Distinguish source unit tests,
