@@ -101,6 +101,7 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
         self.detail = self.label('Loading projects…', 'detail')
         body.pack_start(self.detail, False, False, 0)
         tabs = Gtk.Notebook()
+        self.notebook = tabs
         body.pack_start(tabs, True, True, 0)
         self.project_buttons, self.godot_buttons = [], []
         def page(title, scroll=True):

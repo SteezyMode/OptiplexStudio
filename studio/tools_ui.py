@@ -8,7 +8,28 @@ from gi.repository import Gtk, GLib
 import native_tools
 
 
+# A deliberately benign prompt in the existing, project-scoped embedded workflow.
+# This requests an actual model response, but does not mark AI readiness automatically.
+CODEX_LIVE_CHECK = (
+    "Studio connectivity test for this project. "
+    "Reply with exactly STUDIO CODEX OK. "
+    "Do not run commands, call tools, read files, or modify the project."
+)
+
+
 class ToolsUI:
+    def launch_codex_check(self, project):
+        # Called on GTK's idle queue only after Settings has closed. Refuse
+        # to run if the user switched projects or a project operation started.
+        if (getattr(self, 'busy', False) or
+                self.combo.get_active_id() != project or
+                not any(row['name'] == project for row in self.rows)):
+            self.status.set_text('Codex test not started: select the original Project and retry.')
+            return False
+        self.notebook.set_current_page(1)
+        self.open_embedded(prompt=CODEX_LIVE_CHECK)
+        return False
+
     def save_config(self, candidate):
         # Preserve unknown settings and use the same atomic persistence as Settings.
         from app import CONFIG
@@ -194,11 +215,14 @@ class ToolsUI:
             except (OSError, RuntimeError, ValueError) as exc:
                 auth_state.set_text('Codex sign-in could not start: ' + str(exc))
                 return
-            # Bounded, non-blocking login completion checks. Do not poll from GTK.
+            # Do not drop the login poll merely because another check is busy.
+            # Each attempt runs off GTK; a manual Verify sign-in remains available.
             attempts = [0]
             def poll():
-                if not state['alive'] or state['busy'] or attempts[0] >= 24:
+                if not state['alive'] or attempts[0] >= 24:
                     return False
+                if state['busy']:
+                    return True
                 attempts[0] += 1
                 def finished(result, error):
                     if not state['alive']:
@@ -208,6 +232,8 @@ class ToolsUI:
                         auth_state.set_markup('<span foreground="#e5a53d"><b>● CLI SIGNED IN</b></span>  Live AI access still requires a project test')
                         if hasattr(self, 'refresh_tool_health'):
                             self.refresh_tool_health()
+                    elif attempts[0] >= 24:
+                        auth_state.set_text('Sign-in not confirmed automatically. Select Verify sign-in to retry.')
                 background(lambda: native_tools.codex_authentication(self.config), finished)
                 return True
             GLib.timeout_add_seconds(5, poll)
@@ -272,6 +298,32 @@ class ToolsUI:
         mutable_controls.append(runtime_button)
         connection_row.pack_start(runtime_button, False, False, 0)
         box.pack_start(connection_row, False, False, 0)
+        def request_live_test(_):
+            if state['busy']:
+                return
+            project = self.combo.get_active_id()
+            if not project or not any(row['name'] == project for row in self.rows):
+                self.notice('Select a project first', 'Choose a Studio project in the main window, then reopen Settings.', dialog)
+                return
+            confirm = Gtk.MessageDialog(
+                transient_for=dialog, modal=True, message_type=Gtk.MessageType.QUESTION,
+                buttons=Gtk.ButtonsType.NONE, text='Test Codex in ' + project + '?')
+            confirm.format_secondary_text(
+                'This opens a new persistent project-scoped Codex conversation and requests '
+                'one brief model response. It may consume account/API usage. '
+                'Existing workspace-write and approval safeguards apply; the prompt asks '
+                'Codex not to read or edit files. Only an actual completed reply confirms '
+                'live AI access. No readiness status is changed automatically.')
+            confirm.add_buttons('CANCEL', Gtk.ResponseType.CANCEL, 'OPEN AI TEST', Gtk.ResponseType.OK)
+            approved = confirm.run() == Gtk.ResponseType.OK
+            confirm.destroy()
+            if approved:
+                state['test_project'] = project
+                dialog.response(Gtk.ResponseType.CLOSE)
+        test_row = Gtk.Box(spacing=6)
+        test_row.pack_start(self.button('Test Codex in selected Project…', request_live_test), False, False, 0)
+        test_row.pack_start(self.label('Requires account sign-in and permission to run a model turn; check the reply in AI Workspace.', 'helper'), True, True, 0)
+        box.pack_start(test_row, False, False, 0)
         help_text = 'Automatic installs use verified official releases in ~/.local/share/optiplex-studio/tools. AppImages may need FUSE. Choose Executable keeps manual configuration. Components verified does not guarantee the app can launch. Codex needs sign-in and an embedded AI check. Repair preserves installed files. Closing during downloads cancels active setup.'
         def show_help(_):
             popup = Gtk.MessageDialog(transient_for=dialog, modal=True, message_type=Gtk.MessageType.INFO, buttons=Gtk.ButtonsType.CLOSE, text='Tool setup help')
@@ -296,4 +348,6 @@ class ToolsUI:
             self.save_config(dict(self.config, native_setup_seen=True))
         except OSError as exc:
             self.status.set_text('Setup preferences could not be saved: ' + str(exc))
+        if state.get('test_project'):
+            GLib.idle_add(self.launch_codex_check, state['test_project'])
         return False
