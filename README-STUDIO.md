@@ -143,7 +143,7 @@ python3 -B studio/validate_package.py
 python3 -B tests/run_gtk.py
 ```
 
-The package version is 0.4.10. Packaging refuses to overwrite an
+The package version comes from `studio/version.py`; use the [current GitHub .deb](https://github.com/SteezyMode/OptiplexStudio/releases/latest/download/optiplex-studio_amd64.deb) for the official installed build. Packaging refuses to overwrite an
 existing staging directory or artifact. Approved PNG artwork is copied
 unchanged. Runtime package dependencies contain no SSH client, remote filesystem backend,
 container or streaming client. Optional native applications are not installed
