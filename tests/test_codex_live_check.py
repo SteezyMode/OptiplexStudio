@@ -25,7 +25,7 @@ class LiveCheck(unittest.TestCase):
     def test_check_uses_existing_embedded_project_flow(self):
         host = self.host()
         self.assertFalse(ToolsUI.launch_codex_check(host, 'alpha'))
-        host.notebook.set_current_page.assert_called_once_with(1)
+        host.notebook.set_current_page.assert_called_once_with(0)
         host.open_embedded.assert_called_once_with(prompt=CODEX_LIVE_CHECK)
         self.assertIn('Do not run commands', CODEX_LIVE_CHECK)
         self.assertNotIn('write a file', CODEX_LIVE_CHECK)
