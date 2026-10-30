@@ -109,6 +109,25 @@ def drive():
             s.open_embedded = launch
             s.ai_prompt.get_buffer().set_text('')
             s.combo.set_active_id('game-two')
+            # Real GTK TextView integration, not a mocked open_embedded.
+            # Do not make an authenticated/model request in a CI fixture.
+            from unittest.mock import MagicMock, patch
+            from embedded_ui import EmbeddedView
+            task = 'Make a dead tree in Blender, inspect it and export a GLB to Godot.'
+            with patch.object(EmbeddedView, 'reconnect'):
+                s.open_embedded(prompt=task)
+            view = s.embedded_view
+            assert isinstance(view.prompt, Gtk.TextView)
+            assert view.initial_prompt == task
+            view.conversation = MagicMock()
+            view.conversation.server.closed = False
+            with patch.object(EmbeddedView, 'send') as send:
+                view.connected()
+                buffer = view.prompt.get_buffer()
+                assert buffer.get_text(*buffer.get_bounds(), True) == task
+                assert view.initial_prompt is None
+                send.assert_called_once_with()
+            view.close()
             phase[0] = 'capture-main'
         elif phase[0] == 'capture-main':
             import cairo
