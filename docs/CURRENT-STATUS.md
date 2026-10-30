@@ -1,8 +1,15 @@
 # Studio — current implementation and verification
 
-Updated: **2026-10-29**. This describes the latest Studio source (package version **0.4.19**); verify the **actually published Current .deb** using the repository's latest GitHub Release rather than assuming a source version is a published artifact. Historical remote-service experiments are not part of the supported product.
+Updated: **2026-10-29**. This describes the latest Studio source (package version **0.4.20**); verify the **actually published Current .deb** using the repository's latest GitHub Release rather than assuming a source version is a published artifact. Historical remote-service experiments are not part of the supported product.
 
 Alpha 1 acceptance gates are tracked in [the Alpha 1 roadmap](ALPHA-1-ROADMAP.md), a subset of the frozen [v1 six-milestone plan](https://github.com/SteezyMode/OptiplexStudio/issues/3); **none are signed off solely by CI**.
+
+## Integration pass in v0.4.20
+
+- **Studio workbench is the default first tab:** Edit/Play Godot, launch Blender/LMMS, open/import project files and prompt/resume Codex from one surface. The other Project tab contains documents, context, secondary editors and collapsed tool diagnostics; the third Creative Tools tab is removed. Add Godot appears only when the selected project lacks a scaffold.
+- **Direct Play** starts the selected Godot main scene with the same validated project path and executable as the editor action, but without `--editor`; it neither mutates the Godot project nor claims playback was observed. No more navigating to an external launcher tab for edit–play–revise.
+- **Codex project affinity:** changing the selection closes the previous project's idle embedded conversation, leaving its history resumable; selecting another project during an active turn is rejected. New/resumed conversations switch to the Studio workbench, not an unrelated tab.
+- New CI tests verify scoped Play argv, missing-scaffold/traversal refusal, project switch handling, and the default two-tab GTK layout. This is source/CI acceptance, **not** live Godot playback or an authenticated AI tool roundtrip.
 
 ## Available in current .deb
 
@@ -42,6 +49,6 @@ Studio's ordinary project operations require no SSH, Tailscale, Wolf, NOW, Docke
 2. [#30 — Unified project UI and capabilities](https://github.com/SteezyMode/OptiplexStudio/issues/30): discovery and Godot capability controls are implemented; complete per-tool health/readiness and real editor roundtrip still need end-to-end acceptance.
 3. [#27 — Core-four creative workflow](https://github.com/SteezyMode/OptiplexStudio/issues/27): fresh compatible machine, Godot+Blender+LMMS+Codex native workflow, editable source-to-export roundtrip and actual playback. Recovery and off-host restore also remain unaccepted.
 
-**Next engineering action:** use the Current v0.4.19 .deb to physically exercise the [Alpha A1–A3 clean-install and core-four flow](ALPHA-1-ROADMAP.md). Fix only reproducible failures found on-device, then complete A4 real Godot media playback and A5 off-host recovery. Keep #27, #30, #31 open until accepted.
+**Next engineering action:** use the Current v0.4.20 .deb to physically exercise the [Alpha A1–A3 clean-install and core-four flow](ALPHA-1-ROADMAP.md). Fix only reproducible failures found on-device, then complete A4 real Godot media playback and A5 off-host recovery. Keep #27, #30, #31 open until accepted.
 
 For current instructions use [AGENTS.md](../AGENTS.md), [CONTRIBUTING.md](../CONTRIBUTING.md) and [RELEASING.md](RELEASING.md). Historical v0.3.0 remote/container guides do not define Studio's supported local-first workflow.
