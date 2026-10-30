@@ -6,12 +6,12 @@ from embedded_codex import Conversation
 
 
 class EmbeddedView:
-    def __init__(self, app, config, project, identifier=None):
+    def __init__(self, app, config, project, identifier=None, initial_prompt=None):
         self.app = app
         self.alive = True
         self.working = False
         self.ready = False
-        self.initial_prompt = None
+        self.initial_prompt = initial_prompt
         self.items = {}
         self.transcript = Transcript()
         self.search_index = -1

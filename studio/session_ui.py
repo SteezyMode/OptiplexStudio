@@ -31,10 +31,11 @@ class SessionUI:
         # resumed from Project documents or cross-project history.
         if hasattr(self, 'notebook'):
             self.notebook.set_current_page(0)
-        self.embedded_view = EmbeddedView(self, config, project, identifier)
-        if prompt:
-            self.embedded_view.initial_prompt = prompt
-            self.embedded_view.prompt.set_text(prompt)
+        # Pass the initial task before the asynchronous connection starts:
+        # Gtk.TextView has no set_text() method, and late assignment can race
+        # with a fast connection. EmbeddedView owns its Gtk.TextBuffer.
+        self.embedded_view = EmbeddedView(self, config, project, identifier,
+                                         initial_prompt=prompt)
 
     def session_browser(self, _=None):
         context = self.selected_context()

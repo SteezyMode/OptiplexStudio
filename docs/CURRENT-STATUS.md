@@ -1,6 +1,6 @@
 # Studio — current implementation and verification
 
-Updated: **2026-10-29**. This describes the latest Studio source (package version **0.4.20**); verify the **actually published Current .deb** using the repository's latest GitHub Release rather than assuming a source version is a published artifact. Historical remote-service experiments are not part of the supported product.
+Updated: **2026-10-29**. This describes the latest Studio source (package version **0.4.21**); verify the **actually published Current .deb** using the repository's latest GitHub Release rather than assuming a source version is a published artifact. Historical remote-service experiments are not part of the supported product.
 
 Alpha 1 acceptance gates are tracked in [the Alpha 1 roadmap](ALPHA-1-ROADMAP.md), a subset of the frozen [v1 six-milestone plan](https://github.com/SteezyMode/OptiplexStudio/issues/3); **none are signed off solely by CI**.
 
@@ -10,6 +10,12 @@ Alpha 1 acceptance gates are tracked in [the Alpha 1 roadmap](ALPHA-1-ROADMAP.md
 - **Direct Play** starts the selected Godot main scene with the same validated project path and executable as the editor action, but without `--editor`; it neither mutates the Godot project nor claims playback was observed. No more navigating to an external launcher tab for edit–play–revise.
 - **Codex project affinity:** changing the selection closes the previous project's idle embedded conversation, leaving its history resumable; selecting another project during an active turn is rejected. New/resumed conversations switch to the Studio workbench, not an unrelated tab.
 - New CI tests verify scoped Play argv, missing-scaffold/traversal refusal, project switch handling, and the default two-tab GTK layout. This is source/CI acceptance, **not** live Godot playback or an authenticated AI tool roundtrip.
+
+## AI workflow preflight (v0.4.21)
+
+- Code inspection uncovered a real prompt-launch failure in the v0.4.20 embedded Codex workflow: the Run/prepared-task path called `Gtk.TextView.set_text()`, which is not a valid GTK3 method. The initial prompt is now supplied to `EmbeddedView` before the async Codex connection begins, and `connected()` uses the widget's text buffer to submit it once.
+- Native GTK GUI regression tests now open a **real** embedded conversation composer with a representative dead-tree creation prompt, simulate the successful connection without credentials, and verify its text is populated and submitted exactly once. This is **not** a real model request, Blender MCP call, `.blend` or Godot playtest.
+- The CI runner has no real Blender, Godot or Codex model account; no host desktop, Tailscale or remote service was modified. A real workstation test (Alpha A1–A4) remains required. Do not claim AI asset generation works from CI alone.
 
 ## Available in current .deb
 
@@ -49,6 +55,6 @@ Studio's ordinary project operations require no SSH, Tailscale, Wolf, NOW, Docke
 2. [#30 — Unified project UI and capabilities](https://github.com/SteezyMode/OptiplexStudio/issues/30): discovery and Godot capability controls are implemented; complete per-tool health/readiness and real editor roundtrip still need end-to-end acceptance.
 3. [#27 — Core-four creative workflow](https://github.com/SteezyMode/OptiplexStudio/issues/27): fresh compatible machine, Godot+Blender+LMMS+Codex native workflow, editable source-to-export roundtrip and actual playback. Recovery and off-host restore also remain unaccepted.
 
-**Next engineering action:** use the Current v0.4.20 .deb to physically exercise the [Alpha A1–A3 clean-install and core-four flow](ALPHA-1-ROADMAP.md). Fix only reproducible failures found on-device, then complete A4 real Godot media playback and A5 off-host recovery. Keep #27, #30, #31 open until accepted.
+**Next engineering action:** use the Current v0.4.21 .deb to physically exercise the [Alpha A1–A3 clean-install and core-four flow](ALPHA-1-ROADMAP.md). Fix only reproducible failures found on-device, then complete A4 real Godot media playback and A5 off-host recovery. Keep #27, #30, #31 open until accepted.
 
 For current instructions use [AGENTS.md](../AGENTS.md), [CONTRIBUTING.md](../CONTRIBUTING.md) and [RELEASING.md](RELEASING.md). Historical v0.3.0 remote/container guides do not define Studio's supported local-first workflow.
