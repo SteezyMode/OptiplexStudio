@@ -58,6 +58,15 @@ This does not change A1–A5 or frozen issue #3. Acceptance still requires
 actual editable sources, Godot playback, completed agent tool calls and
 recovery on supported hardware.
 
+## Integrated workbench acceptance
+
+From the default Studio tab, create/select a Project, send a real Codex task,
+launch Blender/LMMS as needed, **Edit** the Godot scene, **Play Game** to
+observe the actual imported asset and audio, and resume the conversation.
+Switching Projects must not misattribute an AI conversation. These are
+workflow checks supporting existing A1–A4, not new gates. CI fixtures or
+successful process spawning alone do not count as a playable roundtrip.
+
 ## Completion standard
 
 Each gate requires a dated evidence note (OS, package version, Git commit, machine,

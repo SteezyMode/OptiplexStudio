@@ -26,7 +26,7 @@ class ToolsUI:
                 not any(row['name'] == project for row in self.rows)):
             self.status.set_text('Codex test not started: select the original Project and retry.')
             return False
-        self.notebook.set_current_page(1)
+        self.notebook.set_current_page(0)
         self.open_embedded(prompt=CODEX_LIVE_CHECK)
         return False
 

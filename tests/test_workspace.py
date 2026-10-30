@@ -190,29 +190,46 @@ class AIComposer(unittest.TestCase):
 
     def test_layout_keeps_presets_and_advanced_actions_separate(self):
         app, fake = self.fake()
-        fake.project_buttons = []
+        fake.project_buttons, fake.godot_buttons = [], []
         fake.label = MagicMock()
         fake.button = MagicMock()
         fake.session_browser = MagicMock()
         fake.copy_brief = MagicMock()
         fake.run_ai_prompt = MagicMock()
         fake.update_ai_run = MagicMock()
+        fake.play_project = MagicMock()
+        fake.open_desktop_application = MagicMock()
+        fake.browse_project = MagicMock()
+        fake.import_assets = MagicMock()
+        fake.add_godot = MagicMock()
         grid = MagicMock()
         # Build without a display; live widget checks are in gui_workflows.py.
         with patch('app.Gtk.Box'), patch('app.Gtk.TextView'), patch('app.Gtk.ScrolledWindow'), patch('app.Gtk.Expander'), patch('app.Gtk.Menu'), patch('app.Gtk.MenuItem'), patch('app.Gtk.Button'):
             app.Studio.build_ai_workspace(fake, MagicMock(), grid)
         groups = [call.args[1] for call in grid.call_args_list]
-        self.assertEqual([entry[0] for entry in groups[0]], ['New Conversation', 'Resume Conversation'])
-        self.assertEqual([entry[0] for entry in groups[1]], ['Review Changes', 'Fix Godot Errors', 'Validate Project'])
-        self.assertEqual([entry[2] for entry in groups[1]], ['project', 'godot', 'godot'])
-        self.assertEqual(len(groups), 3)
-        self.assertEqual([entry[0] for entry in groups[2]], ['Find Conversations', 'External Codex Terminal', 'Explain Project', 'Copy ChatGPT Brief'])
-        for name, callback, _ in groups[1]:
+        self.assertEqual(len(groups), 5)
+        self.assertEqual([entry[0] for entry in groups[0]],
+                         ['Godot · Edit', 'Play Game', 'Blender', 'LMMS'])
+        self.assertEqual([entry[2] for entry in groups[0]],
+                         ['godot', 'godot', 'project', 'project'])
+        self.assertEqual([entry[0] for entry in groups[1]], ['Project Files', 'Import Assets'])
+        self.assertEqual([entry[0] for entry in groups[2]], ['New Conversation', 'Resume Conversation'])
+        self.assertEqual([entry[0] for entry in groups[3]], ['Review Changes', 'Fix Godot Errors', 'Validate Project'])
+        self.assertEqual([entry[2] for entry in groups[3]], ['project', 'godot', 'godot'])
+        self.assertEqual([entry[0] for entry in groups[4]],
+                         ['Find Conversations', 'External Codex Terminal', 'Explain Project', 'Copy ChatGPT Brief'])
+        groups[0][1][1](None)
+        fake.play_project.assert_called_once_with(None)
+        groups[0][2][1](None)
+        fake.open_desktop_application.assert_called_with('blender')
+        groups[1][1][1](None)
+        fake.import_assets.assert_called_once_with(None)
+        for name, callback, _ in groups[3]:
             callback(None)
             fake.open_embedded.assert_called_with(prompt=core.CODEX_TASKS[name])
-        groups[0][0][1](None)
+        groups[2][0][1](None)
         fake.open_embedded.assert_called_with()
-        groups[0][1][1](None)
+        groups[2][1][1](None)
         fake.session_browser.assert_called_once_with(None)
 
 

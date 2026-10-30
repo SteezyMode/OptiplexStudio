@@ -228,6 +228,21 @@ def launch(config, application, project=None):
     return application.title() + ' launched locally.'
 
 
+def launch_game(config, project):
+    """Play the existing Godot main scene without entering editor mode.
+
+    Same project validation and executable as Edit; does not mutate project
+    settings, import assets, open an unrelated workspace or use a shell.
+    """
+    args, cwd = command(config, 'godot', project)
+    if args[1:3] != ['--editor', '--path'] or args[3] != str(cwd):
+        raise RuntimeError('Godot editor command did not match the selected Project.')
+    subprocess.Popen([args[0], '--path', str(cwd)], cwd=str(cwd),
+                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                     stderr=subprocess.DEVNULL, start_new_session=True)
+    return 'Launched ' + project + ' in Godot. Check the game window for actual playback.'
+
+
 def codex_command(config, action, project, session_id=None, prompt=None, all_sessions=False):
     if action not in ('code', 'resume'):
         raise ValueError('Unsupported Codex action.')

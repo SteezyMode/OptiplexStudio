@@ -125,37 +125,45 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
                 button.set_sensitive(False)
                 layout.attach(button, index % columns, index // columns, 1, 1)
             box.pack_start(layout, False, False, 0)
-        project_page = page('Overview')
+        # Workbench first: creation, editors, imports and playable testing stay
+        # within reach of the same project-scoped Codex conversation.
+        studio_page = page('Studio', scroll=False)
+        self.build_ai_workspace(studio_page, grid)
+        project_page = page('Project')
         grid(project_page, [
-            ('Project Files', self.browse_project, 'project'), ('Import Assets', self.import_assets, 'project'),
-            ('Browse Assets', self.browse_assets, 'project'), ('Project Documents', self.documents, 'project'),
+            ('Browse Assets', self.browse_assets, 'project'),
+            ('Project Documents', self.documents, 'project'),
             ('AI Memory', self.ai_memory, 'project'),
-            ('Share Project Context', self.share_context, 'project')])
-        project_page.pack_start(self.label('Local assets, notes and Git history. Import files into the selected project.', 'helper'), False, False, 0)
-        ai_page = page('AI Workspace', scroll=False)
-        self.build_ai_workspace(ai_page, grid)
-        tools = page('Creative Tools')
-        tools.pack_start(self.label('Launch applications for the active Studio project. Install and configure applications in Settings.', 'helper'), False, False, 0)
-        grid(tools, [('Godot', lambda _: self.action('edit'), 'godot')] + [
-            (('LMMS' if name == 'lmms' else name.title()), lambda _, n=name: self.open_desktop_application(n), None)
-            for name in ('blender', 'blockbench', 'lmms', 'krita')])
-        grid(tools, [('VSCodium · Open Current Project', lambda _: self.open_desktop_application('vscodium'), 'project')])
-        self.add_godot_button = self.button('Add Godot to this Project…', self.add_godot)
-        self.add_godot_button.set_sensitive(False)
-        tools.pack_start(self.add_godot_button, False, False, 0)
-        self.godot_capability_note = self.label('Select a Project to see its Godot capability.', 'helper')
-        tools.pack_start(self.godot_capability_note, False, False, 0)
-        tools.pack_start(self.label('Blender and Blockbench start in models/, LMMS in music/, and Krita in art/ when those folders exist. All tools remain local; configure installations in Settings.', 'helper'), False, False, 0)
-        tools.pack_start(self.label('Alpha tool availability · installation is not proof of a working editor', 'section'), False, False, 0)
+            ('Share Project Context', self.share_context, 'project'),
+        ])
+        project_page.pack_start(
+            self.label('Project files, editable source assets, notes and reviewed history '
+                       'remain on this computer.', 'helper'), False, False, 0)
+        project_page.pack_start(
+            self.label('Other editors · these open against the active project', 'section'),
+            False, False, 0)
+        grid(project_page, [
+            ('Blockbench', lambda _: self.open_desktop_application('blockbench'), 'project'),
+            ('Krita', lambda _: self.open_desktop_application('krita'), 'project'),
+            ('VSCodium', lambda _: self.open_desktop_application('vscodium'), 'project'),
+        ], columns=3, button_name='setting')
+        diagnosis = Gtk.Expander(label='Installed tool status · details')
+        diagnosis.set_expanded(False)
+        tool_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6, border_width=8)
+        tool_box.pack_start(self.label(
+            'Detected tools are not proof of working editors or live AI. '
+            'Install or repair them in Settings.', 'helper'), False, False, 0)
         self.tool_health_labels = {}
         for tool in ('godot', 'blender', 'lmms', 'codex'):
             health = self.label(tool.title() + ': Checking…', 'helper')
             health.set_selectable(True)
-            tools.pack_start(health, False, False, 0)
+            tool_box.pack_start(health, False, False, 0)
             self.tool_health_labels[tool] = health
-        tools.pack_start(self.button('Refresh tool status', lambda _: self.refresh_tool_health()), False, False, 0)
-        self.notebook.connect('switch-page', lambda _, page, index:
-                              self.refresh_tool_health() if index == 2 else None)
+        tool_box.pack_start(self.button(
+            'Refresh tool status', lambda _: self.refresh_tool_health()),
+            False, False, 0)
+        diagnosis.add(tool_box)
+        project_page.pack_start(diagnosis, False, False, 0)
         self.transfer_progress = Gtk.ProgressBar(show_text=True)
         self.transfer_progress.set_text('Local project operations')
         body.pack_start(self.transfer_progress, False, False, 0)
@@ -217,12 +225,31 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
         self.worker(evaluate, complete)
 
     def build_ai_workspace(self, page, grid):
-        # Keep launch controls separate from the future embedded output area.
-        self.ai_controls = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        self.ai_controls = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=7)
         page.pack_start(self.ai_controls, False, False, 0)
+        self.ai_controls.pack_start(
+            self.label('Build and play in this Project', 'section'), False, False, 0)
+        grid(self.ai_controls, [
+            ('Godot · Edit', lambda _: self.action('edit'), 'godot'),
+            ('Play Game', self.play_project, 'godot'),
+            ('Blender', lambda _: self.open_desktop_application('blender'), 'project'),
+            ('LMMS', lambda _: self.open_desktop_application('lmms'), 'project'),
+        ], columns=4, button_name='power')
+        grid(self.ai_controls, [
+            ('Project Files', self.browse_project, 'project'),
+            ('Import Assets', self.import_assets, 'project'),
+        ], columns=2, button_name='setting')
+        self.add_godot_button = self.button('Add Godot to this Project…', self.add_godot)
+        self.add_godot_button.set_no_show_all(True)
+        self.add_godot_button.set_sensitive(False)
+        self.ai_controls.pack_start(self.add_godot_button, False, False, 0)
+        self.godot_capability_note = self.label(
+            'Select a Project to see its playable Godot project status.', 'helper')
+        self.ai_controls.pack_start(self.godot_capability_note, False, False, 0)
         grid(self.ai_controls, [
             ('New Conversation', lambda _: self.open_embedded(), 'project'),
-            ('Resume Conversation', self.session_browser, 'project')], button_name='setting')
+            ('Resume Conversation', self.session_browser, 'project'),
+        ], columns=2, button_name='setting')
         prompt_label = self.label('Describe what to create or change', 'helper')
         self.ai_controls.pack_start(prompt_label, False, False, 0)
         self.ai_prompt = Gtk.TextView(wrap_mode=Gtk.WrapMode.WORD_CHAR)
@@ -281,6 +308,18 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
         # A future output widget can be packed here without changing launch controls.
         self.ai_output_area = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         page.pack_start(self.ai_output_area, True, True, 0)
+
+    def play_project(self, _=None):
+        """Launch the selected project's Godot main scene directly, not the editor."""
+        context = self.selected_context()
+        if not context or self.busy:
+            return
+        config, project = context
+        from native_tools import launch_game
+        self.project_task(
+            lambda progress: launch_game(config, project),
+            lambda result: self.status.set_text(result),
+            'Playing Godot project ' + project + '…')
 
     def update_ai_run(self):
         if not hasattr(self, 'ai_run'):
@@ -353,19 +392,30 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
             button.set_sensitive(selected and not self.busy and has_godot)
             if hasattr(button, 'set_tooltip_text'):
                 button.set_tooltip_text('Godot project ready; executable configured in Settings.'
-                                        if has_godot else 'This Project needs Add Godot in Creative Tools.')
+                                        if has_godot else 'Use Add Godot in the Studio workbench to enable editing and playback.')
         if hasattr(self, 'add_godot_button'):
             self.add_godot_button.set_sensitive(selected and not self.busy and not has_godot)
+            self.add_godot_button.set_visible(selected and not has_godot)
             self.godot_capability_note.set_text(
-                'Godot project files detected. Launch the editor if Godot is installed in Settings.'
+                'Godot project ready · Edit or Play above.'
                 if selected and has_godot else
-                'No Godot project files. Add Godot without moving or overwriting existing work.'
-                if selected else 'Select a Project to see its Godot capability.')
+                'Add Godot to enable editing and playing this existing Project.'
+                if selected else 'Select a Project to create, edit and play.')
         self.create_button.set_sensitive(not self.busy)
         if hasattr(self.combo, 'set_sensitive'):
             self.combo.set_sensitive(not self.busy)
         if hasattr(self, 'active_label'):
             self.active_label.set_text('ACTIVE PROJECT: ' + (name if selected else 'none'))
+        # The embedded Codex conversation belongs to its original Project.
+        # Never leave a thread from Project A displayed under Project B.
+        current = getattr(self, 'embedded_view', None)
+        if selected and current and current.alive and current.project != name:
+            if current.conversation and current.conversation.turn:
+                self.status.set_text('Finish or interrupt the active Codex turn before switching Projects.')
+                self.combo.set_active_id(current.project)
+                return
+            current.close()
+            self.status.set_text('Previous Project conversation closed; resume it from Conversations.')
         if selected and hasattr(self, 'last_project') and name != self.last_project:
             self.last_project = name
             try:
@@ -420,6 +470,7 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
             if error:
                 self.notice('Studio action failed', error)
             if action == 'new' and not error:
+                self.notebook.set_current_page(0)
                 self.last_project = name
                 try:
                     remember_project(name)

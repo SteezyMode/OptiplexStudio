@@ -27,6 +27,10 @@ class SessionUI:
             return
         from embedded_ui import EmbeddedView
         config, project = context
+        # Conversations are always shown in the main workbench, even when
+        # resumed from Project documents or cross-project history.
+        if hasattr(self, 'notebook'):
+            self.notebook.set_current_page(0)
         self.embedded_view = EmbeddedView(self, config, project, identifier)
         if prompt:
             self.embedded_view.initial_prompt = prompt
