@@ -240,6 +240,7 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
             ('Import Assets', self.import_assets, 'project'),
         ], columns=2, button_name='setting')
         self.add_godot_button = self.button('Add Godot to this Project…', self.add_godot)
+        self.add_godot_button.set_no_show_all(True)
         self.add_godot_button.set_sensitive(False)
         self.ai_controls.pack_start(self.add_godot_button, False, False, 0)
         self.godot_capability_note = self.label(
@@ -391,7 +392,7 @@ class Studio(ToolsUI, SessionUI, ProjectUI, Gtk.Application):
             button.set_sensitive(selected and not self.busy and has_godot)
             if hasattr(button, 'set_tooltip_text'):
                 button.set_tooltip_text('Godot project ready; executable configured in Settings.'
-                                        if has_godot else 'This Project needs Add Godot in Creative Tools.')
+                                        if has_godot else 'Use Add Godot in the Studio workbench to enable editing and playback.')
         if hasattr(self, 'add_godot_button'):
             self.add_godot_button.set_sensitive(selected and not self.busy and not has_godot)
             self.add_godot_button.set_visible(selected and not has_godot)
