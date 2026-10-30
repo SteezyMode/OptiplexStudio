@@ -75,9 +75,13 @@ def drive():
             if s.tray is not None and s.tray.is_embedded():
                 assert s.tray.get_title() == 'OptiPlex Studio'
             assert s.active_label.get_text() == 'ACTIVE PROJECT: game-two'
+            assert s.notebook.get_n_pages() == 2
+            assert s.notebook.get_current_page() == 0
+            assert [s.notebook.get_tab_label_text(s.notebook.get_nth_page(i)) for i in range(2)] == ['Studio', 'Project']
             captions = {w.get_label() for w in descendants(s.window) if isinstance(w, Gtk.Button)}
             assert {'Blockbench', 'LMMS', 'Krita', 'Blender', 'Import Assets', 'Share Project Context'} <= captions
             assert {'New Conversation', 'Resume Conversation', 'Run', 'Review Changes', 'Fix Godot Errors', 'Validate Project'} <= captions
+            assert {'Godot · Edit', 'Play Game', 'Project Files', 'Import Assets'} <= captions
             assert not s.ai_advanced.get_expanded()
             assert not s.ai_run.get_sensitive()
             assert not s.ai_output_area.get_children()
