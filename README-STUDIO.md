@@ -50,6 +50,24 @@ still check the reviewed hash. Context exports remain explicitly selected ZIP
 snapshots with credential, symlink, traversal and size protections. Attach these
 snapshots to ChatGPT manually; nothing is uploaded automatically.
 
+## Integrated Studio workbench (v0.4.20)
+
+The default **Studio** tab keeps project-scoped creative work on one screen:
+Godot **Edit** and **Play Game** actions, Blender, LMMS, Project Files,
+Import Assets, and the ordinary Codex prompt/conversation. **Play Game**
+launches the selected Godot project directly rather than opening its editor;
+the launched game window must still be observed to verify playback. A missing
+Godot scaffold offers a non-destructive **Add Godot** action in the workbench.
+
+The second **Project** tab holds Browse Assets, documents, AI Memory,
+reviewed context sharing, optional Blockbench/Krita/VSCodium launchers,
+and collapsed installation/status diagnostics. Installing or repairing tools
+remains in one **Settings** window. No extra asset-specific labs or launcher
+tabs are introduced. Opening or resuming a conversation shows the Studio tab.
+If you switch Projects, an idle conversation belonging to the previous
+Project closes locally (resumable from history); an active AI turn prevents
+switching until it finishes or is interrupted.
+
 ## Native creative tools
 
 Godot actions are disabled until the selected project has Godot project files;
